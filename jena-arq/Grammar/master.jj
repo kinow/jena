@@ -97,6 +97,38 @@ import com.hp.hpl.jena.sparql.modify.request.* ;
 public class CLASS extends PARSERBASE
 {
     boolean allowAggregatesInExpressions = false ;
+
+    public static void main(String args[]) {
+        while (true) {
+            StringBuilder queryString = new StringBuilder();
+            java.util.Scanner scanner = new java.util.Scanner(System.in);
+            boolean firstEmptyLine = false;
+            System.out.print("Enter input: ");
+            while (true) {
+                String line = scanner.nextLine();
+                if ("".equals(line) || line == null) {
+                    if (firstEmptyLine) break; // wait for a double ^\n
+                    firstEmptyLine = true;
+                } else {
+                    queryString.append(line + System.lineSeparator());
+                    firstEmptyLine = false;
+                }
+            }
+            try {
+                Query query = QueryFactory.create(queryString.toString(),
+                        "http://example/query-base", Syntax.syntaxARQ);
+                java.io.Reader in = new java.io.StringReader(queryString.toString());
+                CLASS parser = new CLASS(in);
+                parser.setQuery(query);
+                parser.QueryUnit();
+                System.out.println("Parsed query successfully!");
+                System.out.println("---" + System.lineSeparator());
+            } catch (Exception e) {
+                System.out.println("Parser error: " + e.getMessage());
+                e.printStackTrace(System.err);
+            }
+        }
+    }
 }
 PARSER_END(CLASS)
 
@@ -119,7 +151,7 @@ void QueryUnit(): { }
 void Query() : { }
 {    
   Prologue()
-  ( SelectQuery() | ConstructQuery() | DescribeQuery() | AskQuery() 
+  ( LOOKAHEAD(2) SelectQuery() | ConstructQuery() | DescribeQuery() | AskQuery() | JsonTemplateQuery() 
 // #ifdef ARQ
 //   | JsonTemplateQuery()
 // #endif
@@ -301,6 +333,26 @@ void AskQuery() : {}
   SolutionModifier()
 }
 
+void JsonTemplateQuery() : {}
+{  SelectJsonClause()
+  ( DatasetClause() )*
+  WhereClause()
+  SolutionModifier()
+}
+
+void SelectJsonClause() : { Var v; String s;}
+{  <SELECT> { getQuery().setQuerySelectType() ; }
+  <JSON> { getQuery().setJson(true); }
+  <LBRACE>
+  // JavaCC couldn't find a COMMA token
+  s = String() < PNAME_NS >
+  v = Var() { getQuery().addResultVar(v) ; getQuery().addJsonTemplateMapping(s, v) ; }
+  (
+    <COMMA> s = String() < PNAME_NS >
+    v = Var() { getQuery().addResultVar(v) ; getQuery().addJsonTemplateMapping(s, v) ; }
+  )*
+  <RBRACE>
+}
 // ----
 
 void DatasetClause() : {}
@@ -2160,6 +2212,7 @@ TOKEN [IGNORE_CASE] :
 |  < SELECT:      "select" >
 |  < DISTINCT:    "distinct" >
 |  < REDUCED:     "reduced" >
+|  < JSON:        "json" >
 |  < DESCRIBE:    "describe" >
 |  < CONSTRUCT:   "construct" >
 |  < ASK:         "ask" >

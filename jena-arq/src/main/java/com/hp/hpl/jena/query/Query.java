@@ -23,6 +23,7 @@ import java.util.ArrayList ;
 import java.util.Collection ;
 import java.util.HashMap ;
 import java.util.Iterator ;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet ;
 import java.util.List ;
 import java.util.Map ;
@@ -106,6 +107,7 @@ public class Query extends Prologue implements Cloneable, Printable
     
     protected boolean distinct               = false ;
     protected boolean reduced                = false ;
+    protected boolean json                   = false ;
     
     // CONSTRUCT
     protected Template constructTemplate  = null ;
@@ -188,6 +190,9 @@ public class Query extends Prologue implements Cloneable, Printable
     
     public void setReduced(boolean b) { reduced = b ; }
     public boolean isReduced()        { return reduced ; }
+    
+    public void setJson(boolean b) { json = b ; }
+    public boolean isJson()        { return json ; }
     
     /** @return Returns the syntax. */
     public Syntax getSyntax()         { return syntax ; }
@@ -526,6 +531,14 @@ public class Query extends Prologue implements Cloneable, Printable
     public void addHavingCondition(Expr expr)
     {
         havingExprs.add(expr) ;
+    }
+    
+    // SELECT JSON
+    
+    public Map<String, Var> jsonTemplateMapping = new LinkedHashMap<>();
+    
+    public void addJsonTemplateMapping(String key, Var value) {
+    	jsonTemplateMapping.put(key, value);
     }
 
     // ---- Aggregates
