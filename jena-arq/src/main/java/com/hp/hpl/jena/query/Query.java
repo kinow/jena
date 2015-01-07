@@ -71,6 +71,7 @@ public class Query extends Prologue implements Cloneable, Printable
     public static final int QueryTypeConstruct  = 222 ;
     public static final int QueryTypeDescribe   = 333 ;
     public static final int QueryTypeAsk        = 444 ;
+    public static final int QueryTypeJson       = 5555 ;
     int queryType = QueryTypeUnknown ; 
     
     // If no model is provided explicitly, the query engine will load
@@ -107,7 +108,6 @@ public class Query extends Prologue implements Cloneable, Printable
     
     protected boolean distinct               = false ;
     protected boolean reduced                = false ;
-    protected boolean json                   = false ;
     
     // CONSTRUCT
     protected Template constructTemplate  = null ;
@@ -145,6 +145,7 @@ public class Query extends Prologue implements Cloneable, Printable
     public void setQueryConstructType()         { queryType = QueryTypeConstruct ; queryResultStar = true ; }
     public void setQueryDescribeType()          { queryType = QueryTypeDescribe ; }
     public void setQueryAskType()               { queryType = QueryTypeAsk ; }
+    public void setQueryJsonType()              { queryType = QueryTypeJson ; }
     
     public int getQueryType()                   { return queryType ; }
     
@@ -155,6 +156,8 @@ public class Query extends Prologue implements Cloneable, Printable
     public boolean isDescribeType()             { return queryType == QueryTypeDescribe ; }
 
     public boolean isAskType()                  { return queryType == QueryTypeAsk ; }
+
+    public boolean isJsonType()                 { return queryType == QueryTypeJson ; }
 
     public boolean isUnknownType()              { return queryType == QueryTypeUnknown ; }
 
@@ -190,9 +193,6 @@ public class Query extends Prologue implements Cloneable, Printable
     
     public void setReduced(boolean b) { reduced = b ; }
     public boolean isReduced()        { return reduced ; }
-    
-    public void setJson(boolean b) { json = b ; }
-    public boolean isJson()        { return json ; }
     
     /** @return Returns the syntax. */
     public Syntax getSyntax()         { return syntax ; }
@@ -535,10 +535,10 @@ public class Query extends Prologue implements Cloneable, Printable
     
     // SELECT JSON
     
-    public Map<String, Var> jsonTemplateMapping = new LinkedHashMap<>();
+    public Map<String, Var> jsonMapping = new LinkedHashMap<>();
     
-    public void addJsonTemplateMapping(String key, Var value) {
-    	jsonTemplateMapping.put(key, value);
+    public void addJsonMapping(String key, Var value) {
+    	jsonMapping.put(key, value);
     }
 
     // ---- Aggregates

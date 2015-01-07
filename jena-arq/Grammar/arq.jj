@@ -79,7 +79,7 @@ void QueryUnit(): { }
 void Query() : { }
 {
   Prologue()
-  ( LOOKAHEAD(2) SelectQuery() | ConstructQuery() | DescribeQuery() | AskQuery() | JsonTemplateQuery()
+  ( SelectQuery() | ConstructQuery() | DescribeQuery() | AskQuery() | JsonQuery()
   )
   ValuesClause()
 }
@@ -209,23 +209,22 @@ void AskQuery() : {}
   WhereClause()
   SolutionModifier()
 }
-void JsonTemplateQuery() : {}
+void JsonQuery() : {}
 {
-  SelectJsonClause()
+  JsonClause()
   ( DatasetClause() )*
   WhereClause()
   SolutionModifier()
 }
-void SelectJsonClause() : { Var v; String s;}
+void JsonClause() : { Var v; String s;}
 {
-  <SELECT> { getQuery().setQuerySelectType() ; }
-  <JSON> { getQuery().setJson(true); }
+  <JSON> { getQuery().setQueryJsonType(); }
   <LBRACE>
   s = String() < PNAME_NS >
-  v = Var() { getQuery().addResultVar(v) ; getQuery().addJsonTemplateMapping(s, v) ; }
+  v = Var() { getQuery().addResultVar(v) ; getQuery().addJsonMapping(s, v) ; }
   (
     <COMMA> s = String() < PNAME_NS >
-    v = Var() { getQuery().addResultVar(v) ; getQuery().addJsonTemplateMapping(s, v) ; }
+    v = Var() { getQuery().addResultVar(v) ; getQuery().addJsonMapping(s, v) ; }
   )*
   <RBRACE>
 }

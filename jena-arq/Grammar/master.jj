@@ -151,7 +151,7 @@ void QueryUnit(): { }
 void Query() : { }
 {    
   Prologue()
-  ( LOOKAHEAD(2) SelectQuery() | ConstructQuery() | DescribeQuery() | AskQuery() | JsonTemplateQuery() 
+  ( SelectQuery() | ConstructQuery() | DescribeQuery() | AskQuery() | JsonQuery() 
 // #ifdef ARQ
 //   | JsonTemplateQuery()
 // #endif
@@ -333,23 +333,22 @@ void AskQuery() : {}
   SolutionModifier()
 }
 
-void JsonTemplateQuery() : {}
-{  SelectJsonClause()
+void JsonQuery() : {}
+{  JsonClause()
   ( DatasetClause() )*
   WhereClause()
   SolutionModifier()
 }
 
-void SelectJsonClause() : { Var v; String s;}
-{  <SELECT> { getQuery().setQuerySelectType() ; }
-  <JSON> { getQuery().setJson(true); }
+void JsonClause() : { Var v; String s;}
+{  <JSON> { getQuery().setQueryJsonType(); }
   <LBRACE>
   // JavaCC couldn't find a COMMA token
   s = String() < PNAME_NS >
-  v = Var() { getQuery().addResultVar(v) ; getQuery().addJsonTemplateMapping(s, v) ; }
+  v = Var() { getQuery().addResultVar(v) ; getQuery().addJsonMapping(s, v) ; }
   (
     <COMMA> s = String() < PNAME_NS >
-    v = Var() { getQuery().addResultVar(v) ; getQuery().addJsonTemplateMapping(s, v) ; }
+    v = Var() { getQuery().addResultVar(v) ; getQuery().addJsonMapping(s, v) ; }
   )*
   <RBRACE>
 }
