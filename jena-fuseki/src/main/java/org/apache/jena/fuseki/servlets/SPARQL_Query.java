@@ -325,6 +325,11 @@ public abstract class SPARQL_Query extends SPARQL_Protocol
             return new SPARQLResult(b) ;
         }
 
+        if ( query.isJsonType() )
+        {
+            
+        }
+
         errorBadRequest("Unknown query type - "+queryStringLog) ;
         return null ;
     }
