@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletResponse ;
 import org.apache.jena.atlas.RuntimeIOException ;
 import org.apache.jena.atlas.io.IO ;
 import org.apache.jena.atlas.io.IndentedLineBuffer ;
+import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.web.ContentType ;
 import org.apache.jena.fuseki.FusekiException ;
 import org.apache.jena.fuseki.FusekiLib ;
@@ -327,7 +328,9 @@ public abstract class SPARQL_Query extends SPARQL_Protocol
 
         if ( query.isJsonType() )
         {
-            
+            JsonArray results = qExec.execJson();
+            log.info(format("[%d] exec/json", action.id));
+            return new SPARQLResult(results);
         }
 
         errorBadRequest("Unknown query type - "+queryStringLog) ;

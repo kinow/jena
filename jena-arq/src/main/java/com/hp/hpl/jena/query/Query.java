@@ -535,9 +535,9 @@ public class Query extends Prologue implements Cloneable, Printable
     
     // SELECT JSON
     
-    public Map<String, Var> jsonMapping = new LinkedHashMap<>();
+    public Map<String, Object> jsonMapping = new LinkedHashMap<>();
     
-    public void addJsonMapping(String key, Var value) {
+    public void addJsonMapping(String key, Object value) {
     	jsonMapping.put(key, value);
     }
 

@@ -18,6 +18,7 @@
 
 package com.hp.hpl.jena.sparql.resultset;
 
+import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.logging.Log ;
 
 import com.hp.hpl.jena.graph.Node ;
@@ -38,6 +39,7 @@ public class SPARQLResult
     private ResultSet resultSet = null ;
     private Boolean booleanResult = null ;
     private Model model = null ;
+    private JsonArray jsonArray = null ;
     
     // Delayed choice of result type.
     protected SPARQLResult() {}
@@ -45,6 +47,7 @@ public class SPARQLResult
     public SPARQLResult(Model model)            { set(model) ; }
     public SPARQLResult(ResultSet resultSet)    { set(resultSet) ;}
     public SPARQLResult(boolean booleanResult)  { set(booleanResult) ; }
+    public SPARQLResult(JsonArray jsonArray) { set(jsonArray) ; }
     
     public boolean isResultSet()
     {
@@ -70,7 +73,13 @@ public class SPARQLResult
         return booleanResult != null ;
     }
 
-    
+    public boolean isJsonArray()
+    {
+        if ( ! hasBeenSet)
+            throw new ResultSetException("Not set");
+        return jsonArray != null ;
+    }
+
     public ResultSet getResultSet()
     {
         if ( ! hasBeenSet )
@@ -96,7 +105,15 @@ public class SPARQLResult
             throw new ResultSetException("Not a graph result") ;
         return model ;
     }
-    
+
+    public JsonArray getJsonArray() {
+        if ( ! hasBeenSet)
+            throw new ResultSetException("Not set") ;
+        if ( ! isJsonArray() )
+            throw new ResultSetException("Not a jsonArray result") ;
+        return jsonArray;
+    }
+
     public boolean isHasBeenSet() { return hasBeenSet; }
     
     protected void set(ResultSet rs)
@@ -113,7 +130,10 @@ public class SPARQLResult
     
     protected void set(Boolean r)
     { booleanResult  = r ;  hasBeenSet = true ; }
-    
+
+    protected void set(JsonArray j)
+    { jsonArray = j; hasBeenSet = true; }
+
     static protected void addBinding(BindingMap binding, Var var, Node value)
     {
         Node n = binding.get(var) ;

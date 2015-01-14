@@ -18,36 +18,48 @@
 
 package com.hp.hpl.jena.sparql.engine;
 
-import java.util.HashSet ;
-import java.util.Iterator ;
-import java.util.List ;
-import java.util.Set ;
-import java.util.concurrent.TimeUnit ;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.jena.atlas.lib.AlarmClock ;
-import org.apache.jena.atlas.logging.Log ;
-import org.apache.jena.riot.system.IRIResolver ;
+import org.apache.jena.atlas.json.JsonArray;
+import org.apache.jena.atlas.lib.AlarmClock;
+import org.apache.jena.atlas.logging.Log;
+import org.apache.jena.riot.system.IRIResolver;
 
-import com.hp.hpl.jena.graph.Node ;
-import com.hp.hpl.jena.graph.Triple ;
-import com.hp.hpl.jena.query.* ;
-import com.hp.hpl.jena.rdf.model.* ;
-import com.hp.hpl.jena.shared.PrefixMapping ;
-import com.hp.hpl.jena.sparql.ARQConstants ;
-import com.hp.hpl.jena.sparql.core.DatasetGraph ;
-import com.hp.hpl.jena.sparql.core.describe.DescribeHandler ;
-import com.hp.hpl.jena.sparql.core.describe.DescribeHandlerRegistry ;
-import com.hp.hpl.jena.sparql.engine.binding.Binding ;
-import com.hp.hpl.jena.sparql.engine.binding.BindingRoot ;
-import com.hp.hpl.jena.sparql.engine.binding.BindingUtils ;
-import com.hp.hpl.jena.sparql.engine.iterator.QueryIteratorWrapper ;
-import com.hp.hpl.jena.sparql.graph.GraphFactory ;
-import com.hp.hpl.jena.sparql.modify.TemplateLib ;
-import com.hp.hpl.jena.sparql.syntax.ElementGroup ;
-import com.hp.hpl.jena.sparql.syntax.Template ;
-import com.hp.hpl.jena.sparql.util.Context ;
-import com.hp.hpl.jena.sparql.util.DatasetUtils ;
-import com.hp.hpl.jena.sparql.util.ModelUtils ;
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.query.ARQ;
+import com.hp.hpl.jena.query.Dataset;
+import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.QueryCancelledException;
+import com.hp.hpl.jena.query.QueryExecException;
+import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.QuerySolution;
+import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.shared.PrefixMapping;
+import com.hp.hpl.jena.sparql.ARQConstants;
+import com.hp.hpl.jena.sparql.core.DatasetGraph;
+import com.hp.hpl.jena.sparql.core.describe.DescribeHandler;
+import com.hp.hpl.jena.sparql.core.describe.DescribeHandlerRegistry;
+import com.hp.hpl.jena.sparql.engine.binding.Binding;
+import com.hp.hpl.jena.sparql.engine.binding.BindingRoot;
+import com.hp.hpl.jena.sparql.engine.binding.BindingUtils;
+import com.hp.hpl.jena.sparql.engine.iterator.QueryIteratorWrapper;
+import com.hp.hpl.jena.sparql.graph.GraphFactory;
+import com.hp.hpl.jena.sparql.modify.TemplateLib;
+import com.hp.hpl.jena.sparql.syntax.ElementGroup;
+import com.hp.hpl.jena.sparql.syntax.Template;
+import com.hp.hpl.jena.sparql.util.Context;
+import com.hp.hpl.jena.sparql.util.DatasetUtils;
+import com.hp.hpl.jena.sparql.util.ModelUtils;
 
 /** All the SPARQL query result forms made from a graph-level execution object */ 
 
@@ -345,6 +357,24 @@ public class QueryExecutionBase implements QueryExecution
     }
 
     @Override
+    public JsonArray execJson()
+    {
+    	checkNotClosed() ;
+    	if ( ! query.isJsonType() )
+            throw new QueryExecException("Attempt to get a JSON result from a " + labelForQuery(query)+" query");
+
+    	startQueryIterator() ;
+    	JsonArray jsonArray = new JsonArray() ;
+    	while ( queryIterator.hasNext() )
+    	{
+    		@SuppressWarnings("unused")
+			Binding binding = queryIterator.next() ;
+    		// TODO: fill the jsonArray.addObject(new JsonValue(var, value));
+    	}
+    	return jsonArray ;
+    }
+
+    @Override
     public void setTimeout(long timeout, TimeUnit timeUnit)
     {
         // Overall timeout - recorded as (UNSET,N)
@@ -574,6 +604,7 @@ public class QueryExecutionBase implements QueryExecution
         if ( q.isConstructType() )  return "CONSTRUCT" ; 
         if ( q.isDescribeType() )   return "DESCRIBE" ; 
         if ( q.isAskType() )        return "ASK" ;
+        if ( q.isJsonType() )       return "JSON" ;
         return "<<unknown>>" ;
     }
 
