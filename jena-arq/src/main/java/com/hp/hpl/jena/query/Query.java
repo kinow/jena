@@ -23,6 +23,7 @@ import java.util.ArrayList ;
 import java.util.Collection ;
 import java.util.HashMap ;
 import java.util.Iterator ;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet ;
 import java.util.List ;
 import java.util.Map ;
@@ -70,6 +71,7 @@ public class Query extends Prologue implements Cloneable, Printable
     public static final int QueryTypeConstruct  = 222 ;
     public static final int QueryTypeDescribe   = 333 ;
     public static final int QueryTypeAsk        = 444 ;
+    public static final int QueryTypeJson       = 5555 ;
     int queryType = QueryTypeUnknown ; 
     
     // If no model is provided explicitly, the query engine will load
@@ -143,6 +145,7 @@ public class Query extends Prologue implements Cloneable, Printable
     public void setQueryConstructType()         { queryType = QueryTypeConstruct ; queryResultStar = true ; }
     public void setQueryDescribeType()          { queryType = QueryTypeDescribe ; }
     public void setQueryAskType()               { queryType = QueryTypeAsk ; }
+    public void setQueryJsonType()              { queryType = QueryTypeJson ; }
     
     public int getQueryType()                   { return queryType ; }
     
@@ -153,6 +156,8 @@ public class Query extends Prologue implements Cloneable, Printable
     public boolean isDescribeType()             { return queryType == QueryTypeDescribe ; }
 
     public boolean isAskType()                  { return queryType == QueryTypeAsk ; }
+
+    public boolean isJsonType()                 { return queryType == QueryTypeJson ; }
 
     public boolean isUnknownType()              { return queryType == QueryTypeUnknown ; }
 
@@ -526,6 +531,14 @@ public class Query extends Prologue implements Cloneable, Printable
     public void addHavingCondition(Expr expr)
     {
         havingExprs.add(expr) ;
+    }
+    
+    // SELECT JSON
+    
+    public Map<String, Var> jsonMapping = new LinkedHashMap<>();
+    
+    public void addJsonMapping(String key, Var value) {
+    	jsonMapping.put(key, value);
     }
 
     // ---- Aggregates
