@@ -18,14 +18,15 @@
 
 package com.hp.hpl.jena.query;
 
-import java.util.Iterator ;
-import java.util.concurrent.TimeUnit ;
+import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.jena.atlas.json.JsonArray;
+import org.apache.jena.atlas.json.JsonValue;
 
-import com.hp.hpl.jena.graph.Triple ;
-import com.hp.hpl.jena.rdf.model.Model ;
-import com.hp.hpl.jena.sparql.util.Context ;
+import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.sparql.util.Context;
 
 /** A interface for a single execution of a query. */
 
@@ -133,8 +134,11 @@ public interface QueryExecution extends AutoCloseable
     /** Execute an ASK query */
     public boolean execAsk();
 
-    /** Execute a JSON query */
+    /** Execute a JSON query and return a json array */
     public JsonArray execJson();
+    
+    /** Execute a JSON query and return an interator */
+    public Iterator<JsonValue> execJsonItems();
 
 	/** Stop in mid execution.
 	 *  This method can be called in parallel with other methods on the

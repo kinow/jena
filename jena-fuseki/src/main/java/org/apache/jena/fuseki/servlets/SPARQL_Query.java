@@ -18,35 +18,59 @@
 
 package org.apache.jena.fuseki.servlets;
 
-import static java.lang.String.format ;
-import static org.apache.jena.fuseki.HttpNames.* ;
-import static org.apache.jena.fuseki.server.CounterName.QueryExecErrors ;
-import static org.apache.jena.fuseki.server.CounterName.QueryTimeouts ;
-import static org.apache.jena.fuseki.server.CounterName.RequestsBad ;
+import static java.lang.String.format;
+import static org.apache.jena.fuseki.HttpNames.paramAccept;
+import static org.apache.jena.fuseki.HttpNames.paramCallback;
+import static org.apache.jena.fuseki.HttpNames.paramDefaultGraphURI;
+import static org.apache.jena.fuseki.HttpNames.paramForceAccept;
+import static org.apache.jena.fuseki.HttpNames.paramNamedGraphURI;
+import static org.apache.jena.fuseki.HttpNames.paramOutput1;
+import static org.apache.jena.fuseki.HttpNames.paramOutput2;
+import static org.apache.jena.fuseki.HttpNames.paramQuery;
+import static org.apache.jena.fuseki.HttpNames.paramQueryRef;
+import static org.apache.jena.fuseki.HttpNames.paramStyleSheet;
+import static org.apache.jena.fuseki.HttpNames.paramTimeout;
+import static org.apache.jena.fuseki.server.CounterName.QueryExecErrors;
+import static org.apache.jena.fuseki.server.CounterName.QueryTimeouts;
+import static org.apache.jena.fuseki.server.CounterName.RequestsBad;
 
-import java.io.IOException ;
-import java.io.InputStream ;
-import java.util.* ;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest ;
-import javax.servlet.http.HttpServletResponse ;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-import org.apache.jena.atlas.RuntimeIOException ;
-import org.apache.jena.atlas.io.IO ;
-import org.apache.jena.atlas.io.IndentedLineBuffer ;
+import org.apache.jena.atlas.RuntimeIOException;
+import org.apache.jena.atlas.io.IO;
+import org.apache.jena.atlas.io.IndentedLineBuffer;
 import org.apache.jena.atlas.json.JsonArray;
-import org.apache.jena.atlas.web.ContentType ;
-import org.apache.jena.fuseki.FusekiException ;
-import org.apache.jena.fuseki.FusekiLib ;
-import org.apache.jena.fuseki.HttpNames ;
-import org.apache.jena.riot.WebContent ;
-import org.apache.jena.riot.web.HttpOp ;
-import org.apache.jena.web.HttpSC ;
+import org.apache.jena.atlas.web.ContentType;
+import org.apache.jena.fuseki.FusekiException;
+import org.apache.jena.fuseki.FusekiLib;
+import org.apache.jena.fuseki.HttpNames;
+import org.apache.jena.riot.WebContent;
+import org.apache.jena.riot.web.HttpOp;
+import org.apache.jena.web.HttpSC;
 
-import com.hp.hpl.jena.query.* ;
-import com.hp.hpl.jena.rdf.model.Model ;
-import com.hp.hpl.jena.sparql.core.Prologue ;
-import com.hp.hpl.jena.sparql.resultset.SPARQLResult ;
+import com.hp.hpl.jena.query.Dataset;
+import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.QueryCancelledException;
+import com.hp.hpl.jena.query.QueryException;
+import com.hp.hpl.jena.query.QueryExecException;
+import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.QueryExecutionFactory;
+import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.QueryParseException;
+import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.query.Syntax;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.sparql.core.Prologue;
+import com.hp.hpl.jena.sparql.resultset.SPARQLResult;
 
 /**
  * Handles SPARQL Query requests.
@@ -328,9 +352,9 @@ public abstract class SPARQL_Query extends SPARQL_Protocol
 
         if ( query.isJsonType() )
         {
-            JsonArray results = qExec.execJson();
+        	JsonArray jsonArray = qExec.execJson();
             log.info(format("[%d] exec/json", action.id));
-            return new SPARQLResult(results);
+            return new SPARQLResult(jsonArray);
         }
 
         errorBadRequest("Unknown query type - "+queryStringLog) ;
@@ -373,6 +397,8 @@ public abstract class SPARQL_Query extends SPARQL_Protocol
             ResponseModel.doResponseModel(action, result.getModel()) ;
         else if ( result.isBoolean() )
             ResponseResultSet.doResponseResultSet(action, result.getBooleanResult()) ;
+        else if ( result.isJsonArray() )
+        	ResponseJson.doResponseJson(action, result.getJsonArray());
         else
             errorOccurred("Unknown or invalid result type") ;
     }

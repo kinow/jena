@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit ;
 import org.apache.http.client.HttpClient ;
 import org.apache.jena.atlas.io.IO ;
 import org.apache.jena.atlas.json.JsonArray;
+import org.apache.jena.atlas.json.JsonValue;
 import org.apache.jena.atlas.web.auth.HttpAuthenticator ;
 import org.apache.jena.atlas.web.auth.SimpleAuthenticator ;
 import org.apache.jena.riot.* ;
@@ -499,6 +500,12 @@ public class QueryEngineHTTP implements QueryExecution {
     public JsonArray execJson() {
     	// FIXME: Are we going to implement this?
     	return null;
+    }
+    
+    @Override
+    public Iterator<JsonValue> execJsonItems() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     private void checkNotClosed() {

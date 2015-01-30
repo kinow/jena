@@ -25,6 +25,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.jena.atlas.json.JsonArray;
+import org.apache.jena.atlas.json.JsonObject;
+import org.apache.jena.atlas.json.JsonValue;
 import org.apache.jena.atlas.lib.AlarmClock;
 import org.apache.jena.atlas.logging.Log;
 import org.apache.jena.riot.system.IRIResolver;
@@ -47,6 +49,7 @@ import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.shared.PrefixMapping;
 import com.hp.hpl.jena.sparql.ARQConstants;
 import com.hp.hpl.jena.sparql.core.DatasetGraph;
+import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.core.describe.DescribeHandler;
 import com.hp.hpl.jena.sparql.core.describe.DescribeHandlerRegistry;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
@@ -60,6 +63,7 @@ import com.hp.hpl.jena.sparql.syntax.Template;
 import com.hp.hpl.jena.sparql.util.Context;
 import com.hp.hpl.jena.sparql.util.DatasetUtils;
 import com.hp.hpl.jena.sparql.util.ModelUtils;
+import com.hp.hpl.jena.sparql.util.VarUtils;
 
 /** All the SPARQL query result forms made from a graph-level execution object */ 
 
@@ -359,19 +363,37 @@ public class QueryExecutionBase implements QueryExecution
     @Override
     public JsonArray execJson()
     {
-    	checkNotClosed() ;
-    	if ( ! query.isJsonType() )
+        checkNotClosed() ;
+        if ( ! query.isJsonType() )
             throw new QueryExecException("Attempt to get a JSON result from a " + labelForQuery(query)+" query");
 
-    	startQueryIterator() ;
-    	JsonArray jsonArray = new JsonArray() ;
-    	while ( queryIterator.hasNext() )
-    	{
-    		@SuppressWarnings("unused")
-			Binding binding = queryIterator.next() ;
-    		// TODO: fill the jsonArray.addObject(new JsonValue(var, value));
-    	}
-    	return jsonArray ;
+        startQueryIterator() ;
+        
+        JsonArray jsonArray = new JsonArray();
+        
+        List<String> resultVars = query.getResultVars();
+        
+        // TODO: what if resultVars is empty?
+        
+        while (queryIterator.hasNext()) {
+        	Binding binding = queryIterator.next();
+        	JsonObject jsonObject = new JsonObject(); 
+        	for (String resultVar : resultVars) {
+        		Node n = binding.get(Var.alloc(resultVar));
+        		if (n.isLiteral()) {
+        			jsonObject.put(resultVar, n.getLiteral().toString());
+        		}
+        	}
+        	jsonArray.add(jsonObject);
+        }
+        
+        return jsonArray;
+    }
+    
+    @Override
+    public Iterator<JsonValue> execJsonItems() {
+    	// TODO: implement me
+        return null;
     }
 
     @Override
