@@ -18,14 +18,17 @@
 
 package com.hp.hpl.jena.sparql.resultset;
 
-import org.apache.jena.atlas.json.JsonArray;
-import org.apache.jena.atlas.logging.Log ;
+import java.util.Iterator;
 
-import com.hp.hpl.jena.graph.Node ;
-import com.hp.hpl.jena.query.ResultSet ;
-import com.hp.hpl.jena.rdf.model.Model ;
-import com.hp.hpl.jena.sparql.core.Var ;
-import com.hp.hpl.jena.sparql.engine.binding.BindingMap ;
+import org.apache.jena.atlas.json.JsonArray;
+import org.apache.jena.atlas.json.JsonValue;
+import org.apache.jena.atlas.logging.Log;
+
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.sparql.core.Var;
+import com.hp.hpl.jena.sparql.engine.binding.BindingMap;
 
 /**
  * The class "ResultSet" is reserved for the SELECT result format.
@@ -40,6 +43,7 @@ public class SPARQLResult
     private Boolean booleanResult = null ;
     private Model model = null ;
     private JsonArray jsonArray = null ;
+    private Iterator<JsonValue> jsonItems = null;
 
     // Delayed choice of result type.
     protected SPARQLResult() {}
@@ -48,6 +52,7 @@ public class SPARQLResult
     public SPARQLResult(ResultSet resultSet)    { set(resultSet) ;}
     public SPARQLResult(boolean booleanResult)  { set(booleanResult) ; }
     public SPARQLResult(JsonArray jsonArray) { set(jsonArray) ; }
+    public SPARQLResult(Iterator<JsonValue> jsonItems) { set(jsonItems) ; }
 
     public boolean isResultSet()
     {
@@ -80,6 +85,13 @@ public class SPARQLResult
         return jsonArray != null ;
     }
 
+    public boolean isJsonItems()
+    {
+        if ( ! hasBeenSet)
+            throw new ResultSetException("Not set");
+        return jsonItems != null ;
+    }
+    
     public ResultSet getResultSet()
     {
         if ( ! hasBeenSet )
@@ -132,8 +144,11 @@ public class SPARQLResult
     { booleanResult  = r ;  hasBeenSet = true ; }
 
     protected void set(JsonArray j)
-    { jsonArray = j; hasBeenSet = true; }
+    { jsonArray = j ; hasBeenSet = true ; }
 
+    protected void set(Iterator<JsonValue> ji)
+    { jsonItems = ji ; hasBeenSet = true ; }
+    
     static protected void addBinding(BindingMap binding, Var var, Node value)
     {
         Node n = binding.get(var) ;

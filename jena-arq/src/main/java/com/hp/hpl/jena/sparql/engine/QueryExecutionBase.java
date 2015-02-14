@@ -388,8 +388,10 @@ public class QueryExecutionBase implements QueryExecution
 
     @Override
     public Iterator<JsonValue> execJsonItems() {
-        // TODO: implement me
-        return null;
+        checkNotClosed() ;
+        if ( ! query.isJsonType() )
+            throw new QueryExecException("Attempt to get a JSON result from a " + labelForQuery(query)+" query");
+        return new JsonResultSet(queryIterator, query.getResultVars());
     }
 
     @Override
