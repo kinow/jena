@@ -40,7 +40,7 @@ public class SPARQLResult
     private Boolean booleanResult = null ;
     private Model model = null ;
     private JsonArray jsonArray = null ;
-    
+
     // Delayed choice of result type.
     protected SPARQLResult() {}
     
@@ -48,7 +48,7 @@ public class SPARQLResult
     public SPARQLResult(ResultSet resultSet)    { set(resultSet) ;}
     public SPARQLResult(boolean booleanResult)  { set(booleanResult) ; }
     public SPARQLResult(JsonArray jsonArray) { set(jsonArray) ; }
-    
+
     public boolean isResultSet()
     {
         if ( ! hasBeenSet )

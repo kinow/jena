@@ -352,7 +352,8 @@ public abstract class SPARQL_Query extends SPARQL_Protocol
 
         if ( query.isJsonType() )
         {
-        	JsonArray jsonArray = qExec.execJson();
+            // TODO use the streaming format
+            JsonArray jsonArray = qExec.execJson();
             log.info(format("[%d] exec/json", action.id));
             return new SPARQLResult(jsonArray);
         }
@@ -398,7 +399,7 @@ public abstract class SPARQL_Query extends SPARQL_Protocol
         else if ( result.isBoolean() )
             ResponseResultSet.doResponseResultSet(action, result.getBooleanResult()) ;
         else if ( result.isJsonArray() )
-        	ResponseJson.doResponseJson(action, result.getJsonArray());
+            ResponseJson.doResponseJson(action, result.getJsonArray());
         else
             errorOccurred("Unknown or invalid result type") ;
     }

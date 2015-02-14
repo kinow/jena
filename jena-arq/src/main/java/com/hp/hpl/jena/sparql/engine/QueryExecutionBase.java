@@ -63,7 +63,6 @@ import com.hp.hpl.jena.sparql.syntax.Template;
 import com.hp.hpl.jena.sparql.util.Context;
 import com.hp.hpl.jena.sparql.util.DatasetUtils;
 import com.hp.hpl.jena.sparql.util.ModelUtils;
-import com.hp.hpl.jena.sparql.util.VarUtils;
 
 /** All the SPARQL query result forms made from a graph-level execution object */ 
 
@@ -368,31 +367,28 @@ public class QueryExecutionBase implements QueryExecution
             throw new QueryExecException("Attempt to get a JSON result from a " + labelForQuery(query)+" query");
 
         startQueryIterator() ;
-        
+
         JsonArray jsonArray = new JsonArray();
-        
         List<String> resultVars = query.getResultVars();
-        
-        // TODO: what if resultVars is empty?
-        
+
         while (queryIterator.hasNext()) {
-        	Binding binding = queryIterator.next();
-        	JsonObject jsonObject = new JsonObject(); 
-        	for (String resultVar : resultVars) {
-        		Node n = binding.get(Var.alloc(resultVar));
-        		if (n.isLiteral()) {
-        			jsonObject.put(resultVar, n.getLiteral().toString());
-        		}
-        	}
-        	jsonArray.add(jsonObject);
+            Binding binding = queryIterator.next();
+            JsonObject jsonObject = new JsonObject(); 
+            for (String resultVar : resultVars) {
+                Node n = binding.get(Var.alloc(resultVar));
+                if (n.isLiteral()) {
+                    jsonObject.put(resultVar, n.getLiteral().toString());
+                }
+            }
+            jsonArray.add(jsonObject);
         }
-        
+
         return jsonArray;
     }
-    
+
     @Override
     public Iterator<JsonValue> execJsonItems() {
-    	// TODO: implement me
+        // TODO: implement me
         return null;
     }
 
