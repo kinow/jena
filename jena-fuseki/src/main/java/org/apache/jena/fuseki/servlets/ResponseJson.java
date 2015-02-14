@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.jena.fuseki.servlets;
 
 import static java.lang.String.format;
@@ -11,7 +28,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.fuseki.FusekiException;
 import org.apache.jena.fuseki.servlets.ResponseResultSet.OutputContent;
 import org.apache.jena.riot.WebContent;
@@ -21,36 +37,43 @@ import org.slf4j.LoggerFactory;
 
 import com.hp.hpl.jena.query.QueryCancelledException;
 import com.hp.hpl.jena.query.ResultSetFormatter;
+import com.hp.hpl.jena.sparql.engine.ResultSetJsonStream;
 
-public class ResponseJson {
-	
-	private static final Logger LOGGER = LoggerFactory.getLogger(ResponseResultSet.class) ;
-	private static final Logger SERVLET_LOGGER = ServletBase.log ;
+/**
+ * Responsible for handling JSON response output.
+ */
+public class ResponseJson 
+{
 
-	public static void doResponseJson(HttpAction action, JsonArray jsonArray) {
-		if ( jsonArray == null)
+    // Loggers
+    private static final Logger LOGGER = LoggerFactory.getLogger(ResponseResultSet.class) ;
+    private static final Logger SERVLET_LOGGER = ServletBase.log ;
+
+    /**
+     * Outputs a JSON query result
+     * @param action HTTP action
+     * @param jsonItem a ResultSetJsonStream instance
+     */
+    public static void doResponseJson(HttpAction action, ResultSetJsonStream jsonItem) {
+        if ( jsonItem == null)
         {
-			LOGGER.warn("doResponseJson: Result set is null") ; 
+            LOGGER.warn("doResponseJson: Result set is null") ; 
             throw new FusekiException("Result set is null") ;
         }
-		
-		jsonOutput(action, jsonArray);
-	}
 
-	private static void jsonOutput(HttpAction action, final JsonArray jsonArray) {
-		OutputContent proc = new OutputContent(){
+        jsonOutput(action, jsonItem) ;
+    }
+
+    private static void jsonOutput(HttpAction action, final ResultSetJsonStream jsonItems) {
+        OutputContent proc = new OutputContent(){
             @Override
             public void output(ServletOutputStream out)
             {
-                try {
-	                out.print(jsonArray.toString());
-                } catch (IOException e) {
-	                // TODO Auto-generated catch block
-	                e.printStackTrace();
-                }
+                if (jsonItems != null)
+                    ResultSetFormatter.outputAsJSON(out, jsonItems) ;
             }
         } ;
-        
+
         try {
             String callback = ResponseOps.paramCallback(action.request) ;
             ServletOutputStream out = action.response.getOutputStream() ;
@@ -69,8 +92,8 @@ public class ResponseJson {
                 out.println(")") ;
         } catch (IOException ex) { errorOccurred(ex) ; }
     }
-	
-	private static void output(HttpAction action, String contentType, String charset, OutputContent proc) 
+
+    private static void output(HttpAction action, String contentType, String charset, OutputContent proc) 
     {
         try {
             setHttpResponse(action.request, action.response, contentType, charset) ; 
@@ -82,7 +105,7 @@ public class ResponseJson {
                 out.flush() ;
             } catch (QueryCancelledException ex) {
                 // Bother.  Status code 200 already sent.
-            	SERVLET_LOGGER.info(format("[%d] Query Cancelled - results truncated (but 200 already sent)", action.id)) ;
+                SERVLET_LOGGER.info(format("[%d] Query Cancelled - results truncated (but 200 already sent)", action.id)) ;
                 out.println() ;
                 out.println("##  Query cancelled due to timeout during execution   ##") ;
                 out.println("##  ****          Incomplete results           ****   ##") ;
@@ -96,26 +119,26 @@ public class ResponseJson {
         // Do not call httpResponse.flushBuffer(); here - Jetty closes the stream if it is a gzip stream
         // then the JSON callback closing details can't be added. 
     }
-	
-	public static void setHttpResponse(HttpServletRequest httpRequest,
+
+    public static void setHttpResponse(HttpServletRequest httpRequest,
             HttpServletResponse httpResponse,
             String contentType, String charset) 
-	{
-		// ---- Set up HTTP Response
-		// Stop caching (not that ?queryString URLs are cached anyway)
-		if ( true )
-		{
-			httpResponse.setHeader("Cache-Control", "no-cache") ;
-			httpResponse.setHeader("Pragma", "no-cache") ;
-		}
-		// See: http://www.w3.org/International/O-HTTP-charset.html
-		if ( contentType != null )
-		{
-			if ( charset != null )
-				contentType = contentType+"; charset="+charset ;
-			log.trace("Content-Type for response: "+contentType) ;
-			httpResponse.setContentType(contentType) ;
-		}
-	}
-	
+    {
+        // ---- Set up HTTP Response
+        // Stop caching (not that ?queryString URLs are cached anyway)
+        if ( true )
+        {
+            httpResponse.setHeader("Cache-Control", "no-cache") ;
+            httpResponse.setHeader("Pragma", "no-cache") ;
+        }
+        // See: http://www.w3.org/International/O-HTTP-charset.html
+        if ( contentType != null )
+        {
+            if ( charset != null )
+                contentType = contentType+"; charset="+charset ;
+            log.trace("Content-Type for response: "+contentType) ;
+            httpResponse.setContentType(contentType) ;
+        }
+    }
+
 }

@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
-import org.apache.jena.atlas.json.JsonValue;
 import org.apache.jena.atlas.lib.AlarmClock;
 import org.apache.jena.atlas.logging.Log;
 import org.apache.jena.riot.system.IRIResolver;
@@ -387,11 +386,12 @@ public class QueryExecutionBase implements QueryExecution
     }
 
     @Override
-    public Iterator<JsonValue> execJsonItems() {
+    public ResultSetJsonStream execJsonItems() {
         checkNotClosed() ;
         if ( ! query.isJsonType() )
             throw new QueryExecException("Attempt to get a JSON result from a " + labelForQuery(query)+" query");
-        return new JsonResultSet(queryIterator, query.getResultVars());
+        startQueryIterator() ;
+        return new ResultSetJsonStream(queryIterator, query.getResultVars());
     }
 
     @Override

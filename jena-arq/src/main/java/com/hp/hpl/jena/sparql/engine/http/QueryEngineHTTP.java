@@ -18,36 +18,48 @@
 
 package com.hp.hpl.jena.sparql.engine.http;
 
-import java.io.ByteArrayInputStream ;
-import java.io.InputStream ;
-import java.util.ArrayList ;
-import java.util.Iterator ;
-import java.util.List ;
-import java.util.Map ;
-import java.util.concurrent.TimeUnit ;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.http.client.HttpClient ;
-import org.apache.jena.atlas.io.IO ;
+import org.apache.http.client.HttpClient;
+import org.apache.jena.atlas.io.IO;
 import org.apache.jena.atlas.json.JsonArray;
-import org.apache.jena.atlas.json.JsonValue;
-import org.apache.jena.atlas.web.auth.HttpAuthenticator ;
-import org.apache.jena.atlas.web.auth.SimpleAuthenticator ;
-import org.apache.jena.riot.* ;
-import org.apache.jena.riot.web.HttpOp ;
-import org.slf4j.Logger ;
-import org.slf4j.LoggerFactory ;
+import org.apache.jena.atlas.web.auth.HttpAuthenticator;
+import org.apache.jena.atlas.web.auth.SimpleAuthenticator;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RDFLanguages;
+import org.apache.jena.riot.RiotReader;
+import org.apache.jena.riot.WebContent;
+import org.apache.jena.riot.web.HttpOp;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.hp.hpl.jena.graph.Triple ;
-import com.hp.hpl.jena.query.* ;
-import com.hp.hpl.jena.rdf.model.Model ;
-import com.hp.hpl.jena.sparql.ARQException ;
-import com.hp.hpl.jena.sparql.engine.ResultSetCheckCondition ;
-import com.hp.hpl.jena.sparql.graph.GraphFactory ;
-import com.hp.hpl.jena.sparql.resultset.CSVInput ;
-import com.hp.hpl.jena.sparql.resultset.JSONInput ;
-import com.hp.hpl.jena.sparql.resultset.TSVInput ;
-import com.hp.hpl.jena.sparql.resultset.XMLInput ;
-import com.hp.hpl.jena.sparql.util.Context ;
+import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.query.ARQ;
+import com.hp.hpl.jena.query.Dataset;
+import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.QueryException;
+import com.hp.hpl.jena.query.QueryExecException;
+import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.QuerySolution;
+import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.query.ResultSetFactory;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.sparql.ARQException;
+import com.hp.hpl.jena.sparql.engine.ResultSetCheckCondition;
+import com.hp.hpl.jena.sparql.engine.ResultSetJsonStream;
+import com.hp.hpl.jena.sparql.graph.GraphFactory;
+import com.hp.hpl.jena.sparql.resultset.CSVInput;
+import com.hp.hpl.jena.sparql.resultset.JSONInput;
+import com.hp.hpl.jena.sparql.resultset.TSVInput;
+import com.hp.hpl.jena.sparql.resultset.XMLInput;
+import com.hp.hpl.jena.sparql.util.Context;
 
 /**
  * A query execution implementation where queries are executed against a remote
@@ -498,13 +510,13 @@ public class QueryEngineHTTP implements QueryExecution {
 
     @Override
     public JsonArray execJson() {
-    	// FIXME: Are we going to implement this?
-    	return null;
+        // TODO: not implemented for remote queries?
+        return null;
     }
-    
+
     @Override
-    public Iterator<JsonValue> execJsonItems() {
-        // TODO Auto-generated method stub
+    public ResultSetJsonStream execJsonItems() {
+        // TODO: not implemented for remote queries?
         return null;
     }
 

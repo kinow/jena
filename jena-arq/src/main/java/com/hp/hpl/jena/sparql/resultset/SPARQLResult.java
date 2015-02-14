@@ -18,16 +18,13 @@
 
 package com.hp.hpl.jena.sparql.resultset;
 
-import java.util.Iterator;
-
-import org.apache.jena.atlas.json.JsonArray;
-import org.apache.jena.atlas.json.JsonValue;
 import org.apache.jena.atlas.logging.Log;
 
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.sparql.core.Var;
+import com.hp.hpl.jena.sparql.engine.ResultSetJsonStream;
 import com.hp.hpl.jena.sparql.engine.binding.BindingMap;
 
 /**
@@ -42,8 +39,7 @@ public class SPARQLResult
     private ResultSet resultSet = null ;
     private Boolean booleanResult = null ;
     private Model model = null ;
-    private JsonArray jsonArray = null ;
-    private Iterator<JsonValue> jsonItems = null;
+    private ResultSetJsonStream jsonItems = null;
 
     // Delayed choice of result type.
     protected SPARQLResult() {}
@@ -51,8 +47,7 @@ public class SPARQLResult
     public SPARQLResult(Model model)            { set(model) ; }
     public SPARQLResult(ResultSet resultSet)    { set(resultSet) ;}
     public SPARQLResult(boolean booleanResult)  { set(booleanResult) ; }
-    public SPARQLResult(JsonArray jsonArray) { set(jsonArray) ; }
-    public SPARQLResult(Iterator<JsonValue> jsonItems) { set(jsonItems) ; }
+    public SPARQLResult(ResultSetJsonStream jsonItems) { set(jsonItems) ; }
 
     public boolean isResultSet()
     {
@@ -78,20 +73,12 @@ public class SPARQLResult
         return booleanResult != null ;
     }
 
-    public boolean isJsonArray()
-    {
-        if ( ! hasBeenSet)
-            throw new ResultSetException("Not set");
-        return jsonArray != null ;
-    }
-
-    public boolean isJsonItems()
+    public boolean isJson()
     {
         if ( ! hasBeenSet)
             throw new ResultSetException("Not set");
         return jsonItems != null ;
     }
-    
     public ResultSet getResultSet()
     {
         if ( ! hasBeenSet )
@@ -118,12 +105,12 @@ public class SPARQLResult
         return model ;
     }
 
-    public JsonArray getJsonArray() {
+    public ResultSetJsonStream getJsonItems() {
         if ( ! hasBeenSet)
             throw new ResultSetException("Not set") ;
-        if ( ! isJsonArray() )
-            throw new ResultSetException("Not a jsonArray result") ;
-        return jsonArray;
+        if ( ! isJson() )
+            throw new ResultSetException("Not a JSON result") ;
+        return jsonItems ;
     }
 
     public boolean isHasBeenSet() { return hasBeenSet; }
@@ -143,12 +130,8 @@ public class SPARQLResult
     protected void set(Boolean r)
     { booleanResult  = r ;  hasBeenSet = true ; }
 
-    protected void set(JsonArray j)
-    { jsonArray = j ; hasBeenSet = true ; }
-
-    protected void set(Iterator<JsonValue> ji)
-    { jsonItems = ji ; hasBeenSet = true ; }
-    
+    protected void set(ResultSetJsonStream jsonItems)
+    { this.jsonItems = jsonItems ; hasBeenSet = true ; }
     static protected void addBinding(BindingMap binding, Var var, Node value)
     {
         Node n = binding.get(var) ;
