@@ -18,13 +18,15 @@
 
 package com.hp.hpl.jena.sparql.resultset;
 
+import java.util.Iterator;
+
+import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.logging.Log;
 
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.sparql.core.Var;
-import com.hp.hpl.jena.sparql.engine.ResultSetJsonStream;
 import com.hp.hpl.jena.sparql.engine.binding.BindingMap;
 
 /**
@@ -39,7 +41,7 @@ public class SPARQLResult
     private ResultSet resultSet = null ;
     private Boolean booleanResult = null ;
     private Model model = null ;
-    private ResultSetJsonStream jsonItems = null;
+    private Iterator<JsonObject> jsonItems = null ;
 
     // Delayed choice of result type.
     protected SPARQLResult() {}
@@ -47,7 +49,7 @@ public class SPARQLResult
     public SPARQLResult(Model model)            { set(model) ; }
     public SPARQLResult(ResultSet resultSet)    { set(resultSet) ;}
     public SPARQLResult(boolean booleanResult)  { set(booleanResult) ; }
-    public SPARQLResult(ResultSetJsonStream jsonItems) { set(jsonItems) ; }
+    public SPARQLResult(Iterator<JsonObject> jsonItems) { set(jsonItems) ; }
 
     public boolean isResultSet()
     {
@@ -55,7 +57,7 @@ public class SPARQLResult
             throw new ResultSetException("Not set") ;
         return resultSet != null ;
     }
-    
+
     /** Synonym for isGraph */
     public boolean isModel() { return isGraph() ; }
 
@@ -105,7 +107,8 @@ public class SPARQLResult
         return model ;
     }
 
-    public ResultSetJsonStream getJsonItems() {
+    public Iterator<JsonObject> getJsonItems()
+    {
         if ( ! hasBeenSet)
             throw new ResultSetException("Not set") ;
         if ( ! isJson() )
@@ -113,7 +116,7 @@ public class SPARQLResult
         return jsonItems ;
     }
 
-    public boolean isHasBeenSet() { return hasBeenSet; }
+    public boolean isHasBeenSet() { return hasBeenSet ; }
     
     protected void set(ResultSet rs)
     { 
@@ -130,7 +133,7 @@ public class SPARQLResult
     protected void set(Boolean r)
     { booleanResult  = r ;  hasBeenSet = true ; }
 
-    protected void set(ResultSetJsonStream jsonItems)
+    protected void set(Iterator<JsonObject> jsonItems)
     { this.jsonItems = jsonItems ; hasBeenSet = true ; }
     static protected void addBinding(BindingMap binding, Var var, Node value)
     {

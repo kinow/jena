@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.jena.atlas.json.JsonArray;
+import org.apache.jena.atlas.json.JsonObject;
 
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.rdf.model.Model;
@@ -134,10 +135,10 @@ public interface QueryExecution extends AutoCloseable
     public boolean execAsk();
 
     /** Execute a JSON query and return a json array */
-    public JsonArray execJson();
+    public JsonArray execJson() ;
 
     /** Execute a JSON query and return an interator */
-    public ResultSet execJsonItems();
+    public Iterator<JsonObject> execJsonItems() ;
 
 	/** Stop in mid execution.
 	 *  This method can be called in parallel with other methods on the

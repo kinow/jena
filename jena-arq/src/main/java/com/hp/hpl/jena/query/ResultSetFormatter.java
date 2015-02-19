@@ -18,38 +18,41 @@
 
 package com.hp.hpl.jena.query;
 
-import java.io.ByteArrayOutputStream ;
-import java.io.OutputStream ;
-import java.io.PrintWriter ;
-import java.io.UnsupportedEncodingException ;
-import java.util.ArrayList ;
-import java.util.Iterator ;
-import java.util.List ;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
-import org.apache.jena.atlas.logging.Log ;
-import org.apache.jena.riot.ResultSetMgr ;
+import org.apache.jena.atlas.json.JsonObject;
+import org.apache.jena.atlas.json.JsonValue;
+import org.apache.jena.atlas.json.io.JSWriter;
+import org.apache.jena.atlas.logging.Log;
+import org.apache.jena.riot.ResultSetMgr;
 
-import com.hp.hpl.jena.rdf.model.Model ;
-import com.hp.hpl.jena.rdf.model.RDFNode ;
-import com.hp.hpl.jena.rdf.model.Resource ;
-import com.hp.hpl.jena.shared.PrefixMapping ;
-import com.hp.hpl.jena.sparql.ARQException ;
-import com.hp.hpl.jena.sparql.ARQNotImplemented ;
-import com.hp.hpl.jena.sparql.core.Prologue ;
-import com.hp.hpl.jena.sparql.core.Var ;
-import com.hp.hpl.jena.sparql.engine.binding.Binding ;
-import com.hp.hpl.jena.sparql.engine.binding.BindingOutputStream ;
-import com.hp.hpl.jena.sparql.engine.binding.BindingUtils ;
-import com.hp.hpl.jena.sparql.resultset.CSVOutput ;
-import com.hp.hpl.jena.sparql.resultset.JSONOutput ;
-import com.hp.hpl.jena.sparql.resultset.RDFOutput ;
-import com.hp.hpl.jena.sparql.resultset.ResultsFormat ;
-import com.hp.hpl.jena.sparql.resultset.TSVOutput ;
-import com.hp.hpl.jena.sparql.resultset.TextOutput ;
-import com.hp.hpl.jena.sparql.resultset.XMLOutput ;
-import com.hp.hpl.jena.sparql.resultset.XMLOutputASK ;
-import com.hp.hpl.jena.sparql.serializer.SerializationContext ;
-import com.hp.hpl.jena.util.FileUtils ;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.shared.PrefixMapping;
+import com.hp.hpl.jena.sparql.ARQException;
+import com.hp.hpl.jena.sparql.ARQNotImplemented;
+import com.hp.hpl.jena.sparql.core.Prologue;
+import com.hp.hpl.jena.sparql.core.Var;
+import com.hp.hpl.jena.sparql.engine.binding.Binding;
+import com.hp.hpl.jena.sparql.engine.binding.BindingOutputStream;
+import com.hp.hpl.jena.sparql.engine.binding.BindingUtils;
+import com.hp.hpl.jena.sparql.resultset.CSVOutput;
+import com.hp.hpl.jena.sparql.resultset.JSONOutput;
+import com.hp.hpl.jena.sparql.resultset.RDFOutput;
+import com.hp.hpl.jena.sparql.resultset.ResultsFormat;
+import com.hp.hpl.jena.sparql.resultset.TSVOutput;
+import com.hp.hpl.jena.sparql.resultset.TextOutput;
+import com.hp.hpl.jena.sparql.resultset.XMLOutput;
+import com.hp.hpl.jena.sparql.resultset.XMLOutputASK;
+import com.hp.hpl.jena.sparql.serializer.SerializationContext;
+import com.hp.hpl.jena.util.FileUtils;
 
 /** ResultSetFormatter - Convenience ways to call the various output formatters.
  *  in various formats.
@@ -681,7 +684,33 @@ public class ResultSetFormatter {
         JSONOutput jOut = new JSONOutput() ;
         jOut.format(outStream, booleanResult) ; 
     }
-    
+
+    /** Output an iterator of JSON values.
+     *
+     * @param outStream output stream
+     * @param jsonItems The JSON values
+     */
+    public static void outputAsJSON(OutputStream outStream, Iterator<JsonObject> jsonItems)
+    {
+        JSWriter jWriter = new JSWriter(outStream) ;
+        jWriter.startArray() ;
+        jWriter.startOutput() ;
+        while (jsonItems.hasNext()) 
+        {
+            jWriter.startObject() ;
+            JsonObject jsonItem = jsonItems.next() ;
+            for (String key: jsonItem.keys()) 
+            {
+                JsonValue value = jsonItem.get(key) ;
+                String val = value.getAsString().value() ;
+                jWriter.pair(key, val) ;
+            }
+            jWriter.finishObject() ;
+        }
+        jWriter.finishArray() ;
+        jWriter.finishOutput() ;
+    }
+
     // ---- SSE
     
     /** Output a boolean result in the SSE format

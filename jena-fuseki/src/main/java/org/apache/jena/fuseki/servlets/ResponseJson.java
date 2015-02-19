@@ -22,12 +22,14 @@ import static org.apache.jena.fuseki.servlets.ServletBase.errorOccurred;
 import static org.apache.jena.fuseki.servlets.ServletBase.log;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.fuseki.FusekiException;
 import org.apache.jena.fuseki.servlets.ResponseResultSet.OutputContent;
 import org.apache.jena.riot.WebContent;
@@ -37,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 import com.hp.hpl.jena.query.QueryCancelledException;
 import com.hp.hpl.jena.query.ResultSetFormatter;
-import com.hp.hpl.jena.sparql.engine.ResultSetJsonStream;
 
 /**
  * Responsible for handling JSON response output.
@@ -51,10 +52,12 @@ public class ResponseJson
 
     /**
      * Outputs a JSON query result
+     *
      * @param action HTTP action
      * @param jsonItem a ResultSetJsonStream instance
      */
-    public static void doResponseJson(HttpAction action, ResultSetJsonStream jsonItem) {
+    public static void doResponseJson(HttpAction action, Iterator<JsonObject> jsonItem)
+    {
         if ( jsonItem == null)
         {
             LOGGER.warn("doResponseJson: Result set is null") ; 
@@ -64,8 +67,10 @@ public class ResponseJson
         jsonOutput(action, jsonItem) ;
     }
 
-    private static void jsonOutput(HttpAction action, final ResultSetJsonStream jsonItems) {
-        OutputContent proc = new OutputContent(){
+    private static void jsonOutput(HttpAction action, final Iterator<JsonObject> jsonItems)
+    {
+        OutputContent proc = new OutputContent()
+        {
             @Override
             public void output(ServletOutputStream out)
             {
@@ -74,7 +79,8 @@ public class ResponseJson
             }
         } ;
 
-        try {
+        try
+        {
             String callback = ResponseOps.paramCallback(action.request) ;
             ServletOutputStream out = action.response.getOutputStream() ;
 
@@ -95,7 +101,8 @@ public class ResponseJson
 
     private static void output(HttpAction action, String contentType, String charset, OutputContent proc) 
     {
-        try {
+        try
+        {
             setHttpResponse(action.request, action.response, contentType, charset) ; 
             action.response.setStatus(HttpSC.OK_200) ;
             ServletOutputStream out = action.response.getOutputStream() ;
@@ -103,7 +110,9 @@ public class ResponseJson
             {
                 proc.output(out) ;
                 out.flush() ;
-            } catch (QueryCancelledException ex) {
+            }
+            catch (QueryCancelledException ex)
+            {
                 // Bother.  Status code 200 already sent.
                 SERVLET_LOGGER.info(format("[%d] Query Cancelled - results truncated (but 200 already sent)", action.id)) ;
                 out.println() ;

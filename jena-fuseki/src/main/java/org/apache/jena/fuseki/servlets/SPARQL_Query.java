@@ -39,6 +39,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
@@ -48,6 +49,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.jena.atlas.RuntimeIOException;
 import org.apache.jena.atlas.io.IO;
 import org.apache.jena.atlas.io.IndentedLineBuffer;
+import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.web.ContentType;
 import org.apache.jena.fuseki.FusekiException;
 import org.apache.jena.fuseki.FusekiLib;
@@ -69,7 +71,6 @@ import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.sparql.core.Prologue;
-import com.hp.hpl.jena.sparql.engine.ResultSetJsonStream;
 import com.hp.hpl.jena.sparql.resultset.SPARQLResult;
 
 /**
@@ -352,10 +353,10 @@ public abstract class SPARQL_Query extends SPARQL_Protocol
 
         if ( query.isJsonType() )
         {
-            ResultSet jsonIterator = qExec.execJsonItems();
+            Iterator<JsonObject> jsonIterator = qExec.execJsonItems();
             //JsonArray jsonArray = qExec.execJson();
             log.info(format("[%d] exec/json", action.id));
-            return new SPARQLResult((ResultSetJsonStream) jsonIterator);
+            return new SPARQLResult(jsonIterator);
         }
 
         errorBadRequest("Unknown query type - "+queryStringLog) ;
@@ -399,7 +400,7 @@ public abstract class SPARQL_Query extends SPARQL_Protocol
         else if ( result.isBoolean() )
             ResponseResultSet.doResponseResultSet(action, result.getBooleanResult()) ;
         else if ( result.isJson() )
-            ResponseJson.doResponseJson(action, result.getJsonItems());
+            ResponseJson.doResponseJson(action, result.getJsonItems()) ;
         else
             errorOccurred("Unknown or invalid result type") ;
     }

@@ -363,35 +363,37 @@ public class QueryExecutionBase implements QueryExecution
     {
         checkNotClosed() ;
         if ( ! query.isJsonType() )
-            throw new QueryExecException("Attempt to get a JSON result from a " + labelForQuery(query)+" query");
+            throw new QueryExecException("Attempt to get a JSON result from a " + labelForQuery(query)+" query") ;
 
         startQueryIterator() ;
 
         JsonArray jsonArray = new JsonArray();
         List<String> resultVars = query.getResultVars();
 
-        while (queryIterator.hasNext()) {
-            Binding binding = queryIterator.next();
-            JsonObject jsonObject = new JsonObject(); 
+        while (queryIterator.hasNext())
+        {
+            Binding binding = queryIterator.next() ;
+            JsonObject jsonObject = new JsonObject() ; 
             for (String resultVar : resultVars) {
-                Node n = binding.get(Var.alloc(resultVar));
+                Node n = binding.get(Var.alloc(resultVar)) ;
                 if (n.isLiteral()) {
-                    jsonObject.put(resultVar, n.getLiteral().toString());
+                    jsonObject.put(resultVar, n.getLiteral().toString()) ;
                 }
             }
-            jsonArray.add(jsonObject);
+            jsonArray.add(jsonObject) ;
         }
 
-        return jsonArray;
+        return jsonArray ;
     }
 
     @Override
-    public ResultSetJsonStream execJsonItems() {
+    public Iterator<JsonObject> execJsonItems() 
+    {
         checkNotClosed() ;
         if ( ! query.isJsonType() )
-            throw new QueryExecException("Attempt to get a JSON result from a " + labelForQuery(query)+" query");
+            throw new QueryExecException("Attempt to get a JSON result from a " + labelForQuery(query)+" query") ;
         startQueryIterator() ;
-        return new ResultSetJsonStream(queryIterator, query.getResultVars());
+        return new JsonIterator(queryIterator, query.getResultVars()) ;
     }
 
     @Override

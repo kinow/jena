@@ -26,9 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.http.client.HttpClient;
 import org.apache.jena.atlas.io.IO;
 import org.apache.jena.atlas.json.JsonArray;
+import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.web.auth.HttpAuthenticator;
 import org.apache.jena.atlas.web.auth.SimpleAuthenticator;
 import org.apache.jena.riot.Lang;
@@ -53,7 +55,6 @@ import com.hp.hpl.jena.query.ResultSetFactory;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.sparql.ARQException;
 import com.hp.hpl.jena.sparql.engine.ResultSetCheckCondition;
-import com.hp.hpl.jena.sparql.engine.ResultSetJsonStream;
 import com.hp.hpl.jena.sparql.graph.GraphFactory;
 import com.hp.hpl.jena.sparql.resultset.CSVInput;
 import com.hp.hpl.jena.sparql.resultset.JSONInput;
@@ -509,15 +510,15 @@ public class QueryEngineHTTP implements QueryExecution {
     }
 
     @Override
-    public JsonArray execJson() {
-        // TODO: not implemented for remote queries?
-        return null;
+    public JsonArray execJson()
+    {
+        throw new NotImplementedException("JSON queries not implemented for remote calls") ;
     }
 
     @Override
-    public ResultSetJsonStream execJsonItems() {
-        // TODO: not implemented for remote queries?
-        return null;
+    public Iterator<JsonObject> execJsonItems()
+    {
+        throw new NotImplementedException("JSON queries not implemented for remote calls") ;
     }
 
     private void checkNotClosed() {
