@@ -30,6 +30,7 @@
         <artifactId>jena-maven-tools</artifactId>
         <version>@project.version@</version>
         <configuration>
+          <outputDirectory>${project.build.directory}/custom</outputDirectory>
           <includes>
             <include>src/main/vocabs/*.ttl</include>
           </includes>
@@ -37,11 +38,6 @@
             <source>
               <input>default</input>
               <package-name>org.example.test</package-name>
-            </source>
-            <source>
-              <!-- Test1.java will contain have a different namespace url. -->
-              <input>src/main/vocabs/test1.ttl</input>
-              <namespace>urn:test#</namespace>
             </source>
           </fileOptions>
         </configuration>

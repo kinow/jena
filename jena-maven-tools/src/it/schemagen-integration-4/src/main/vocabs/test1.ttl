@@ -22,12 +22,8 @@
 @prefix skos:               <http://www.w3.org/2004/02/skos/core#> .
 @prefix xsd:                <http://www.w3.org/2001/XMLSchema#> .
 @prefix ex:                 <http://example.org/test#>.
-@prefix test:				<urn:test#>.
 
 <http://example.org/test>
   a owl:Ontology.
 
-test:Cls a owl:Class.
-
-
-
+ex:Cls a owl:Class.
