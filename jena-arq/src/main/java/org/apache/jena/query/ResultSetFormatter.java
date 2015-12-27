@@ -26,6 +26,9 @@ import java.util.ArrayList ;
 import java.util.Iterator ;
 import java.util.List ;
 
+import org.apache.jena.atlas.json.JsonObject;
+import org.apache.jena.atlas.json.JsonValue;
+import org.apache.jena.atlas.json.io.JSWriter;
 import org.apache.jena.atlas.logging.Log ;
 import org.apache.jena.rdf.model.RDFNode ;
 import org.apache.jena.riot.ResultSetMgr ;
@@ -523,7 +526,33 @@ public class ResultSetFormatter {
         JSONOutput jOut = new JSONOutput() ;
         jOut.format(outStream, booleanResult) ; 
     }
-    
+
+    /** Output an iterator of JSON values.
+    *
+    * @param outStream output stream
+    * @param jsonItems The JSON values
+    */
+   public static void outputAsJSON(OutputStream outStream, Iterator<JsonObject> jsonItems)
+   {
+       JSWriter jWriter = new JSWriter(outStream) ;
+       jWriter.startArray() ;
+       jWriter.startOutput() ;
+       while (jsonItems.hasNext()) 
+       {
+           jWriter.startObject() ;
+           JsonObject jsonItem = jsonItems.next() ;
+           for (String key: jsonItem.keys()) 
+           {
+               JsonValue value = jsonItem.get(key) ;
+               String val = value.getAsString().value() ;
+               jWriter.pair(key, val) ;
+           }
+           jWriter.finishObject() ;
+       }
+       jWriter.finishArray() ;
+       jWriter.finishOutput() ;
+   }
+
     // ---- SSE
     
     /** Output a boolean result in the SSE format

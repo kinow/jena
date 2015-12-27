@@ -13,6 +13,37 @@ import org.apache.jena.sparql.modify.request.* ;
 @SuppressWarnings("all")
 public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11Constants {
     boolean allowAggregatesInExpressions = false ;
+    public static void main(String args[]) {
+        while (true) {
+            StringBuilder queryString = new StringBuilder() ;
+            java.util.Scanner scanner = new java.util.Scanner(System.in) ;
+            boolean firstEmptyLine = false ;
+            System.out.print("Enter input: ") ;
+            while (true) {
+                String line = scanner.nextLine() ;
+                if ("".equals(line) || line == null) {
+                    if (firstEmptyLine) break ;
+                    firstEmptyLine = true ;
+                } else {
+                    queryString.append(line + System.lineSeparator()) ;
+                    firstEmptyLine = false ;
+                }
+            }
+            try {
+                Query query = QueryFactory.create(queryString.toString(),
+                        "http://example/query-base", Syntax.syntaxARQ) ;
+                java.io.Reader in = new java.io.StringReader(queryString.toString()) ;
+                SPARQLParser11 parser = new SPARQLParser11(in) ;
+                parser.setQuery(query) ;
+                parser.QueryUnit() ;
+                System.out.println("Parsed query successfully!") ;
+                System.out.println("---" + System.lineSeparator()) ;
+            } catch (Exception e) {
+                System.out.println("Parser error: " + e.getMessage()) ;
+                e.printStackTrace(System.err) ;
+            }
+        }
+    }
 
   final public void QueryUnit() throws ParseException {
     ByteOrderMark();
@@ -36,6 +67,9 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       break;
     case ASK:
       AskQuery();
+      break;
+    case JSON:
+      JsonQuery();
       break;
     default:
       jj_la1[0] = jj_gen;
@@ -379,6 +413,94 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
     SolutionModifier();
   }
 
+  final public void JsonQuery() throws ParseException {
+    JsonClause();
+    label_9:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case FROM:
+        ;
+        break;
+      default:
+        jj_la1[19] = jj_gen;
+        break label_9;
+      }
+      DatasetClause();
+    }
+    WhereClause();
+    SolutionModifier();
+  }
+
+  final public void JsonClause() throws ParseException {
+                      Object o ; String s ;
+    jj_consume_token(JSON);
+           getQuery().setQueryJsonType() ;
+    jj_consume_token(LBRACE);
+    s = String();
+    jj_consume_token(PNAME_NS);
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case VAR1:
+    case VAR2:
+      o = Var();
+                getQuery().addResultVar((Var) o) ; getQuery().addJsonMapping(s, o) ;
+      break;
+    case STRING_LITERAL1:
+    case STRING_LITERAL2:
+    case STRING_LITERAL_LONG1:
+    case STRING_LITERAL_LONG2:
+      o = String();
+                   getQuery().addJsonMapping(s, o) ;
+      break;
+    case INTEGER:
+    case DECIMAL:
+      o = Number();
+                   getQuery().addJsonMapping(s, o) ;
+      break;
+    default:
+      jj_la1[20] = jj_gen;
+      jj_consume_token(-1);
+      throw new ParseException();
+    }
+    label_10:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case COMMA:
+        ;
+        break;
+      default:
+        jj_la1[21] = jj_gen;
+        break label_10;
+      }
+      jj_consume_token(COMMA);
+      s = String();
+      jj_consume_token(PNAME_NS);
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case VAR1:
+      case VAR2:
+        o = Var();
+                  getQuery().addResultVar((Var) o) ; getQuery().addJsonMapping(s, o) ;
+        break;
+      case STRING_LITERAL1:
+      case STRING_LITERAL2:
+      case STRING_LITERAL_LONG1:
+      case STRING_LITERAL_LONG2:
+        o = String();
+                     getQuery().addJsonMapping(s, o) ;
+        break;
+      case INTEGER:
+      case DECIMAL:
+        o = Number();
+                     getQuery().addJsonMapping(s, o) ;
+        break;
+      default:
+        jj_la1[22] = jj_gen;
+        jj_consume_token(-1);
+        throw new ParseException();
+      }
+    }
+    jj_consume_token(RBRACE);
+  }
+
   final public void DatasetClause() throws ParseException {
     jj_consume_token(FROM);
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -391,7 +513,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       NamedGraphClause();
       break;
     default:
-      jj_la1[19] = jj_gen;
+      jj_la1[23] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -424,7 +546,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       jj_consume_token(WHERE);
       break;
     default:
-      jj_la1[20] = jj_gen;
+      jj_la1[24] = jj_gen;
       ;
     }
      startWherePattern() ;
@@ -439,7 +561,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       GroupClause();
       break;
     default:
-      jj_la1[21] = jj_gen;
+      jj_la1[25] = jj_gen;
       ;
     }
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -447,7 +569,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       HavingClause();
       break;
     default:
-      jj_la1[22] = jj_gen;
+      jj_la1[26] = jj_gen;
       ;
     }
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -455,7 +577,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       OrderClause();
       break;
     default:
-      jj_la1[23] = jj_gen;
+      jj_la1[27] = jj_gen;
       ;
     }
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -464,7 +586,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       LimitOffsetClauses();
       break;
     default:
-      jj_la1[24] = jj_gen;
+      jj_la1[28] = jj_gen;
       ;
     }
   }
@@ -472,7 +594,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
   final public void GroupClause() throws ParseException {
     jj_consume_token(GROUP);
     jj_consume_token(BY);
-    label_9:
+    label_11:
     while (true) {
       GroupCondition();
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -546,8 +668,8 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         ;
         break;
       default:
-        jj_la1[25] = jj_gen;
-        break label_9;
+        jj_la1[29] = jj_gen;
+        break label_11;
       }
     }
   }
@@ -634,7 +756,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         v = Var();
         break;
       default:
-        jj_la1[26] = jj_gen;
+        jj_la1[30] = jj_gen;
         ;
       }
       jj_consume_token(RPAREN);
@@ -646,7 +768,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       getQuery().addGroupBy(v) ;
       break;
     default:
-      jj_la1[27] = jj_gen;
+      jj_la1[31] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -655,7 +777,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
   final public void HavingClause() throws ParseException {
       allowAggregatesInExpressions = true ;
     jj_consume_token(HAVING);
-    label_10:
+    label_12:
     while (true) {
       HavingCondition();
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -727,8 +849,8 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         ;
         break;
       default:
-        jj_la1[28] = jj_gen;
-        break label_10;
+        jj_la1[32] = jj_gen;
+        break label_12;
       }
     }
       allowAggregatesInExpressions = false ;
@@ -744,7 +866,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
     allowAggregatesInExpressions = true ;
     jj_consume_token(ORDER);
     jj_consume_token(BY);
-    label_11:
+    label_13:
     while (true) {
       OrderCondition();
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -820,8 +942,8 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         ;
         break;
       default:
-        jj_la1[29] = jj_gen;
-        break label_11;
+        jj_la1[33] = jj_gen;
+        break label_13;
       }
     }
     allowAggregatesInExpressions = false ;
@@ -843,7 +965,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                  direction = Query.ORDER_DESCENDING ;
         break;
       default:
-        jj_la1[30] = jj_gen;
+        jj_la1[34] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -989,13 +1111,13 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         v = Var();
         break;
       default:
-        jj_la1[31] = jj_gen;
+        jj_la1[35] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
       break;
     default:
-      jj_la1[32] = jj_gen;
+      jj_la1[36] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -1014,7 +1136,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         OffsetClause();
         break;
       default:
-        jj_la1[33] = jj_gen;
+        jj_la1[37] = jj_gen;
         ;
       }
       break;
@@ -1025,12 +1147,12 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         LimitClause();
         break;
       default:
-        jj_la1[34] = jj_gen;
+        jj_la1[38] = jj_gen;
         ;
       }
       break;
     default:
-      jj_la1[35] = jj_gen;
+      jj_la1[39] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -1060,7 +1182,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       finishValuesClause(t.beginLine, t.beginColumn) ;
       break;
     default:
-      jj_la1[36] = jj_gen;
+      jj_la1[40] = jj_gen;
       ;
     }
   }
@@ -1088,12 +1210,12 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         Update();
         break;
       default:
-        jj_la1[37] = jj_gen;
+        jj_la1[41] = jj_gen;
         ;
       }
       break;
     default:
-      jj_la1[38] = jj_gen;
+      jj_la1[42] = jj_gen;
       ;
     }
   }
@@ -1138,7 +1260,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       DeleteData();
       break;
     default:
-      jj_la1[39] = jj_gen;
+      jj_la1[43] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -1155,7 +1277,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                        silent = true ;
       break;
     default:
-      jj_la1[40] = jj_gen;
+      jj_la1[44] = jj_gen;
       ;
     }
     url = iri();
@@ -1165,7 +1287,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       dest = GraphRef();
       break;
     default:
-      jj_la1[41] = jj_gen;
+      jj_la1[45] = jj_gen;
       ;
     }
       {if (true) return new UpdateLoad(url, dest, silent) ;}
@@ -1181,7 +1303,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                        silent = true ;
       break;
     default:
-      jj_la1[42] = jj_gen;
+      jj_la1[46] = jj_gen;
       ;
     }
     target = GraphRefAll();
@@ -1198,7 +1320,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                       silent = true ;
       break;
     default:
-      jj_la1[43] = jj_gen;
+      jj_la1[47] = jj_gen;
       ;
     }
     target = GraphRefAll();
@@ -1215,7 +1337,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                         silent=true ;
       break;
     default:
-      jj_la1[44] = jj_gen;
+      jj_la1[48] = jj_gen;
       ;
     }
     iri = GraphRef();
@@ -1232,7 +1354,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                     silent=true ;
       break;
     default:
-      jj_la1[45] = jj_gen;
+      jj_la1[49] = jj_gen;
       ;
     }
     src = GraphOrDefault();
@@ -1251,7 +1373,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                      silent=true ;
       break;
     default:
-      jj_la1[46] = jj_gen;
+      jj_la1[50] = jj_gen;
       ;
     }
     src = GraphOrDefault();
@@ -1270,7 +1392,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                      silent=true ;
       break;
     default:
-      jj_la1[47] = jj_gen;
+      jj_la1[51] = jj_gen;
       ;
     }
     src = GraphOrDefault();
@@ -1322,7 +1444,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                          Node n = createNode(iri) ; up.setWithIRI(n) ;
       break;
     default:
-      jj_la1[48] = jj_gen;
+      jj_la1[52] = jj_gen;
       ;
     }
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -1333,7 +1455,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         InsertClause(up);
         break;
       default:
-        jj_la1[49] = jj_gen;
+        jj_la1[53] = jj_gen;
         ;
       }
       break;
@@ -1341,19 +1463,19 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       InsertClause(up);
       break;
     default:
-      jj_la1[50] = jj_gen;
+      jj_la1[54] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
-    label_12:
+    label_14:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case USING:
         ;
         break;
       default:
-        jj_la1[51] = jj_gen;
-        break label_12;
+        jj_la1[55] = jj_gen;
+        break label_14;
       }
       UsingClause(up);
     }
@@ -1403,7 +1525,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       n = createNode(iri) ; update.addUsingNamed(n) ;
       break;
     default:
-      jj_la1[52] = jj_gen;
+      jj_la1[56] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -1425,14 +1547,14 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         jj_consume_token(GRAPH);
         break;
       default:
-        jj_la1[53] = jj_gen;
+        jj_la1[57] = jj_gen;
         ;
       }
       iri = iri();
        {if (true) return Target.create(createNode(iri)) ;}
       break;
     default:
-      jj_la1[54] = jj_gen;
+      jj_la1[58] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -1467,7 +1589,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
              {if (true) return Target.ALL ;}
       break;
     default:
-      jj_la1[55] = jj_gen;
+      jj_la1[59] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -1516,18 +1638,18 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       TriplesTemplate(acc);
       break;
     default:
-      jj_la1[56] = jj_gen;
+      jj_la1[60] = jj_gen;
       ;
     }
-    label_13:
+    label_15:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case GRAPH:
         ;
         break;
       default:
-        jj_la1[57] = jj_gen;
-        break label_13;
+        jj_la1[61] = jj_gen;
+        break label_15;
       }
       QuadsNotTriples(acc);
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -1535,7 +1657,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         jj_consume_token(DOT);
         break;
       default:
-        jj_la1[58] = jj_gen;
+        jj_la1[62] = jj_gen;
         ;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -1567,7 +1689,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         TriplesTemplate(acc);
         break;
       default:
-        jj_la1[59] = jj_gen;
+        jj_la1[63] = jj_gen;
         ;
       }
     }
@@ -1608,7 +1730,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       TriplesTemplate(acc);
       break;
     default:
-      jj_la1[60] = jj_gen;
+      jj_la1[64] = jj_gen;
       ;
     }
     jj_consume_token(RBRACE);
@@ -1649,12 +1771,12 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         TriplesTemplate(acc);
         break;
       default:
-        jj_la1[61] = jj_gen;
+        jj_la1[65] = jj_gen;
         ;
       }
       break;
     default:
-      jj_la1[62] = jj_gen;
+      jj_la1[66] = jj_gen;
       ;
     }
   }
@@ -1671,7 +1793,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       el = new ElementSubQuery(q) ;
       break;
     default:
-      jj_la1[63] = jj_gen;
+      jj_la1[67] = jj_gen;
       el = GroupGraphPatternSub();
     }
     jj_consume_token(RBRACE);
@@ -1715,10 +1837,10 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       elg.addElement(el) ;
       break;
     default:
-      jj_la1[64] = jj_gen;
+      jj_la1[68] = jj_gen;
       ;
     }
-    label_14:
+    label_16:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case VALUES:
@@ -1732,8 +1854,8 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         ;
         break;
       default:
-        jj_la1[65] = jj_gen;
-        break label_14;
+        jj_la1[69] = jj_gen;
+        break label_16;
       }
       el = GraphPatternNotTriples();
       elg.addElement(el) ;
@@ -1742,7 +1864,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         jj_consume_token(DOT);
         break;
       default:
-        jj_la1[66] = jj_gen;
+        jj_la1[70] = jj_gen;
         ;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -1777,7 +1899,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         elg.addElement(el) ;
         break;
       default:
-        jj_la1[67] = jj_gen;
+        jj_la1[71] = jj_gen;
         ;
       }
     }
@@ -1822,12 +1944,12 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         TriplesBlock(acc);
         break;
       default:
-        jj_la1[68] = jj_gen;
+        jj_la1[72] = jj_gen;
         ;
       }
       break;
     default:
-      jj_la1[69] = jj_gen;
+      jj_la1[73] = jj_gen;
       ;
     }
       {if (true) return acc ;}
@@ -1862,7 +1984,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       el = InlineData();
       break;
     default:
-      jj_la1[70] = jj_gen;
+      jj_la1[74] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -1896,7 +2018,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
      silent=true;
       break;
     default:
-      jj_la1[71] = jj_gen;
+      jj_la1[75] = jj_gen;
       ;
     }
     n = VarOrIri();
@@ -1940,7 +2062,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       InlineDataFull();
       break;
     default:
-      jj_la1[72] = jj_gen;
+      jj_la1[76] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -1951,7 +2073,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
     v = Var();
     emitDataBlockVariable(v) ;
     t = jj_consume_token(LBRACE);
-    label_15:
+    label_17:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case IRIref:
@@ -1976,8 +2098,8 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         ;
         break;
       default:
-        jj_la1[73] = jj_gen;
-        break label_15;
+        jj_la1[77] = jj_gen;
+        break label_17;
       }
       n = DataBlockValue();
       startDataBlockValueRow(-1, -1) ;
@@ -1995,7 +2117,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       break;
     case LPAREN:
       jj_consume_token(LPAREN);
-      label_16:
+      label_18:
       while (true) {
         switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
         case VAR1:
@@ -2003,8 +2125,8 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
           ;
           break;
         default:
-          jj_la1[74] = jj_gen;
-          break label_16;
+          jj_la1[78] = jj_gen;
+          break label_18;
         }
         v = Var();
                  emitDataBlockVariable(v) ;
@@ -2012,12 +2134,12 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       jj_consume_token(RPAREN);
       break;
     default:
-      jj_la1[75] = jj_gen;
+      jj_la1[79] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
     jj_consume_token(LBRACE);
-    label_17:
+    label_19:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case LPAREN:
@@ -2025,15 +2147,15 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         ;
         break;
       default:
-        jj_la1[76] = jj_gen;
-        break label_17;
+        jj_la1[80] = jj_gen;
+        break label_19;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case LPAREN:
         t = jj_consume_token(LPAREN);
       beginLine = t.beginLine; beginColumn = t.beginColumn; t = null;
       startDataBlockValueRow(beginLine, beginColumn) ;
-        label_18:
+        label_20:
         while (true) {
           switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
           case IRIref:
@@ -2058,8 +2180,8 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
             ;
             break;
           default:
-            jj_la1[77] = jj_gen;
-            break label_18;
+            jj_la1[81] = jj_gen;
+            break label_20;
           }
           n = DataBlockValue();
           emitDataBlockValue(n, beginLine, beginColumn) ;
@@ -2075,7 +2197,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         finishDataBlockValueRow(beginLine, beginColumn) ;
         break;
       default:
-        jj_la1[78] = jj_gen;
+        jj_la1[82] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -2121,7 +2243,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
             {if (true) return null ;}
       break;
     default:
-      jj_la1[79] = jj_gen;
+      jj_la1[83] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -2139,15 +2261,15 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
   final public Element GroupOrUnionGraphPattern() throws ParseException {
       Element el = null ; ElementUnion el2 = null ;
     el = GroupGraphPattern();
-    label_19:
+    label_21:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case UNION:
         ;
         break;
       default:
-        jj_la1[80] = jj_gen;
-        break label_19;
+        jj_la1[84] = jj_gen;
+        break label_21;
       }
       jj_consume_token(UNION);
       if ( el2 == null )
@@ -2245,7 +2367,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       c = FunctionCall();
       break;
     default:
-      jj_la1[81] = jj_gen;
+      jj_la1[85] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -2287,20 +2409,20 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                                  beginLine, beginColumn) ;
         break;
       default:
-        jj_la1[82] = jj_gen;
+        jj_la1[86] = jj_gen;
         ;
       }
       expr = Expression();
                             args.add(expr) ;
-      label_20:
+      label_22:
       while (true) {
         switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
         case COMMA:
           ;
           break;
         default:
-          jj_la1[83] = jj_gen;
-          break label_20;
+          jj_la1[87] = jj_gen;
+          break label_22;
         }
         jj_consume_token(COMMA);
         expr = Expression();
@@ -2309,7 +2431,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       jj_consume_token(RPAREN);
       break;
     default:
-      jj_la1[84] = jj_gen;
+      jj_la1[88] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -2327,15 +2449,15 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       jj_consume_token(LPAREN);
       expr = Expression();
                           args.add(expr) ;
-      label_21:
+      label_23:
       while (true) {
         switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
         case COMMA:
           ;
           break;
         default:
-          jj_la1[85] = jj_gen;
-          break label_21;
+          jj_la1[89] = jj_gen;
+          break label_23;
         }
         jj_consume_token(COMMA);
         expr = Expression();
@@ -2344,7 +2466,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       jj_consume_token(RPAREN);
       break;
     default:
-      jj_la1[86] = jj_gen;
+      jj_la1[90] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -2386,7 +2508,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       ConstructTriples(acc);
       break;
     default:
-      jj_la1[87] = jj_gen;
+      jj_la1[91] = jj_gen;
       ;
     }
     jj_consume_token(RBRACE);
@@ -2429,12 +2551,12 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         ConstructTriples(acc);
         break;
       default:
-        jj_la1[88] = jj_gen;
+        jj_la1[92] = jj_gen;
         ;
       }
       break;
     default:
-      jj_la1[89] = jj_gen;
+      jj_la1[93] = jj_gen;
       ;
     }
   }
@@ -2476,7 +2598,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
     insert(acc, tempAcc) ;
       break;
     default:
-      jj_la1[90] = jj_gen;
+      jj_la1[94] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -2493,7 +2615,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       PropertyListNotEmpty(s, acc);
       break;
     default:
-      jj_la1[91] = jj_gen;
+      jj_la1[95] = jj_gen;
       ;
     }
   }
@@ -2502,15 +2624,15 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       Node p = null ;
     p = Verb();
     ObjectList(s, p, null, acc);
-    label_22:
+    label_24:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case SEMICOLON:
         ;
         break;
       default:
-        jj_la1[92] = jj_gen;
-        break label_22;
+        jj_la1[96] = jj_gen;
+        break label_24;
       }
       jj_consume_token(SEMICOLON);
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -2524,7 +2646,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         ObjectList(s, p, null, acc);
         break;
       default:
-        jj_la1[93] = jj_gen;
+        jj_la1[97] = jj_gen;
         ;
       }
     }
@@ -2545,7 +2667,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                               p = nRDFtype ;
       break;
     default:
-      jj_la1[94] = jj_gen;
+      jj_la1[98] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -2556,15 +2678,15 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
   final public void ObjectList(Node s, Node p, Path path, TripleCollector acc) throws ParseException {
                                                                    Node o ;
     Object(s, p, path, acc);
-    label_23:
+    label_25:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case COMMA:
         ;
         break;
       default:
-        jj_la1[95] = jj_gen;
-        break label_23;
+        jj_la1[99] = jj_gen;
+        break label_25;
       }
       jj_consume_token(COMMA);
       Object(s, p, path, acc);
@@ -2615,7 +2737,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
     insert(acc, tempAcc) ;
       break;
     default:
-      jj_la1[96] = jj_gen;
+      jj_la1[100] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -2635,7 +2757,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       PropertyListPathNotEmpty(s, acc);
       break;
     default:
-      jj_la1[97] = jj_gen;
+      jj_la1[101] = jj_gen;
       ;
     }
   }
@@ -2657,20 +2779,20 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       p = VerbSimple();
       break;
     default:
-      jj_la1[98] = jj_gen;
+      jj_la1[102] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
     ObjectListPath(s, p, path, acc);
-    label_24:
+    label_26:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case SEMICOLON:
         ;
         break;
       default:
-        jj_la1[99] = jj_gen;
-        break label_24;
+        jj_la1[103] = jj_gen;
+        break label_26;
       }
       jj_consume_token(SEMICOLON);
       path = null ; p = null ;
@@ -2699,14 +2821,14 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
           p = VerbSimple();
           break;
         default:
-          jj_la1[100] = jj_gen;
+          jj_la1[104] = jj_gen;
           jj_consume_token(-1);
           throw new ParseException();
         }
         ObjectListPath(s, p, path, acc);
         break;
       default:
-        jj_la1[101] = jj_gen;
+        jj_la1[105] = jj_gen;
         ;
       }
     }
@@ -2729,15 +2851,15 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
   final public void ObjectListPath(Node s, Node p, Path path, TripleCollector acc) throws ParseException {
                                                                        Node o ;
     ObjectPath(s, p, path, acc);
-    label_25:
+    label_27:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case COMMA:
         ;
         break;
       default:
-        jj_la1[102] = jj_gen;
-        break label_25;
+        jj_la1[106] = jj_gen;
+        break label_27;
       }
       jj_consume_token(COMMA);
       ObjectPath(s, p, path, acc);
@@ -2761,15 +2883,15 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
   final public Path PathAlternative() throws ParseException {
                            Path p1 , p2 ;
     p1 = PathSequence();
-    label_26:
+    label_28:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case VBAR:
         ;
         break;
       default:
-        jj_la1[103] = jj_gen;
-        break label_26;
+        jj_la1[107] = jj_gen;
+        break label_28;
       }
       jj_consume_token(VBAR);
       p2 = PathSequence();
@@ -2782,15 +2904,15 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
   final public Path PathSequence() throws ParseException {
                         Path p1 , p2 ;
     p1 = PathEltOrInverse();
-    label_27:
+    label_29:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case SLASH:
         ;
         break;
       default:
-        jj_la1[104] = jj_gen;
-        break label_27;
+        jj_la1[108] = jj_gen;
+        break label_29;
       }
       jj_consume_token(SLASH);
       p2 = PathEltOrInverse();
@@ -2810,7 +2932,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       p = PathMod(p);
       break;
     default:
-      jj_la1[105] = jj_gen;
+      jj_la1[109] = jj_gen;
       ;
     }
      {if (true) return p ;}
@@ -2834,7 +2956,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
        p = PathFactory.pathInverse(p) ;
       break;
     default:
-      jj_la1[106] = jj_gen;
+      jj_la1[110] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -2858,7 +2980,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
               {if (true) return PathFactory.pathOneOrMore1(p) ;}
       break;
     default:
-      jj_la1[107] = jj_gen;
+      jj_la1[111] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -2888,7 +3010,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       jj_consume_token(RPAREN);
       break;
     default:
-      jj_la1[108] = jj_gen;
+      jj_la1[112] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -2918,15 +3040,15 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       case CARAT:
         p = PathOneInPropertySet();
                                    pNegSet.add(p) ;
-        label_28:
+        label_30:
         while (true) {
           switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
           case VBAR:
             ;
             break;
           default:
-            jj_la1[109] = jj_gen;
-            break label_28;
+            jj_la1[113] = jj_gen;
+            break label_30;
           }
           jj_consume_token(VBAR);
           p = PathOneInPropertySet();
@@ -2934,13 +3056,13 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         }
         break;
       default:
-        jj_la1[110] = jj_gen;
+        jj_la1[114] = jj_gen;
         ;
       }
       jj_consume_token(RPAREN);
       break;
     default:
-      jj_la1[111] = jj_gen;
+      jj_la1[115] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -2975,13 +3097,13 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                {if (true) return new P_ReverseLink(nRDFtype) ;}
         break;
       default:
-        jj_la1[112] = jj_gen;
+        jj_la1[116] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
       break;
     default:
-      jj_la1[113] = jj_gen;
+      jj_la1[117] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -3007,7 +3129,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                                    {if (true) return n ;}
       break;
     default:
-      jj_la1[114] = jj_gen;
+      jj_la1[118] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -3036,7 +3158,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                                        {if (true) return n ;}
       break;
     default:
-      jj_la1[115] = jj_gen;
+      jj_la1[119] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -3057,7 +3179,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       Node listHead = nRDFnil ; Node lastCell = null ; int mark ; Node n ; Token t ;
     t = jj_consume_token(LPAREN);
     int beginLine = t.beginLine; int beginColumn = t.beginColumn; t = null;
-    label_29:
+    label_31:
     while (true) {
       Node cell = createListNode( beginLine, beginColumn) ;
       if ( listHead == nRDFnil )
@@ -3097,8 +3219,8 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         ;
         break;
       default:
-        jj_la1[116] = jj_gen;
-        break label_29;
+        jj_la1[120] = jj_gen;
+        break label_31;
       }
     }
     jj_consume_token(RPAREN);
@@ -3112,7 +3234,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       Node listHead = nRDFnil ; Node lastCell = null ; int mark ; Node n ; Token t ;
     t = jj_consume_token(LPAREN);
     int beginLine = t.beginLine; int beginColumn = t.beginColumn; t = null;
-    label_30:
+    label_32:
     while (true) {
       Node cell = createListNode( beginLine, beginColumn) ;
       if ( listHead == nRDFnil )
@@ -3152,8 +3274,8 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         ;
         break;
       default:
-        jj_la1[117] = jj_gen;
-        break label_30;
+        jj_la1[121] = jj_gen;
+        break label_32;
       }
     }
     jj_consume_token(RPAREN);
@@ -3198,7 +3320,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                          {if (true) return n ;}
       break;
     default:
-      jj_la1[118] = jj_gen;
+      jj_la1[122] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -3240,7 +3362,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                              {if (true) return n ;}
       break;
     default:
-      jj_la1[119] = jj_gen;
+      jj_la1[123] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -3278,7 +3400,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       n = GraphTerm();
       break;
     default:
-      jj_la1[120] = jj_gen;
+      jj_la1[124] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -3300,7 +3422,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                               n = createNode(iri) ;
       break;
     default:
-      jj_la1[121] = jj_gen;
+      jj_la1[125] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -3326,7 +3448,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                                                 n = createNode(iri) ;
       break;
     default:
-      jj_la1[122] = jj_gen;
+      jj_la1[126] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -3344,7 +3466,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       t = jj_consume_token(VAR2);
       break;
     default:
-      jj_la1[123] = jj_gen;
+      jj_la1[127] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -3395,7 +3517,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
           {if (true) return nRDFnil ;}
       break;
     default:
-      jj_la1[124] = jj_gen;
+      jj_la1[128] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -3412,15 +3534,15 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
   final public Expr ConditionalOrExpression() throws ParseException {
                                    Expr expr1, expr2 ;
     expr1 = ConditionalAndExpression();
-    label_31:
+    label_33:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case SC_OR:
         ;
         break;
       default:
-        jj_la1[125] = jj_gen;
-        break label_31;
+        jj_la1[129] = jj_gen;
+        break label_33;
       }
       jj_consume_token(SC_OR);
       expr2 = ConditionalAndExpression();
@@ -3433,15 +3555,15 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
   final public Expr ConditionalAndExpression() throws ParseException {
                                     Expr expr1, expr2 ;
     expr1 = ValueLogical();
-    label_32:
+    label_34:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case SC_AND:
         ;
         break;
       default:
-        jj_la1[126] = jj_gen;
-        break label_32;
+        jj_la1[130] = jj_gen;
+        break label_34;
       }
       jj_consume_token(SC_AND);
       expr2 = ValueLogical();
@@ -3513,13 +3635,13 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         expr1 = new E_NotOneOf(expr1, a) ;
         break;
       default:
-        jj_la1[127] = jj_gen;
+        jj_la1[131] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
       break;
     default:
-      jj_la1[128] = jj_gen;
+      jj_la1[132] = jj_gen;
       ;
     }
       {if (true) return expr1 ;}
@@ -3536,7 +3658,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
   final public Expr AdditiveExpression() throws ParseException {
                               Expr expr1, expr2, expr3 ; boolean addition ; Node n ;
     expr1 = MultiplicativeExpression();
-    label_33:
+    label_35:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case INTEGER_POSITIVE:
@@ -3550,8 +3672,8 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         ;
         break;
       default:
-        jj_la1[129] = jj_gen;
-        break label_33;
+        jj_la1[133] = jj_gen;
+        break label_35;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case PLUS:
@@ -3588,11 +3710,11 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
          addition = false ;
           break;
         default:
-          jj_la1[130] = jj_gen;
+          jj_la1[134] = jj_gen;
           jj_consume_token(-1);
           throw new ParseException();
         }
-        label_34:
+        label_36:
         while (true) {
           switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
           case STAR:
@@ -3600,8 +3722,8 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
             ;
             break;
           default:
-            jj_la1[131] = jj_gen;
-            break label_34;
+            jj_la1[135] = jj_gen;
+            break label_36;
           }
           switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
           case STAR:
@@ -3615,7 +3737,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                                             expr2 = new E_Divide(expr2, expr3) ;
             break;
           default:
-            jj_la1[132] = jj_gen;
+            jj_la1[136] = jj_gen;
             jj_consume_token(-1);
             throw new ParseException();
           }
@@ -3626,7 +3748,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
          expr1 = new E_Subtract(expr1, expr2) ;
         break;
       default:
-        jj_la1[133] = jj_gen;
+        jj_la1[137] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -3638,7 +3760,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
   final public Expr MultiplicativeExpression() throws ParseException {
                                     Expr expr1, expr2 ;
     expr1 = UnaryExpression();
-    label_35:
+    label_37:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case STAR:
@@ -3646,8 +3768,8 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         ;
         break;
       default:
-        jj_la1[134] = jj_gen;
-        break label_35;
+        jj_la1[138] = jj_gen;
+        break label_37;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case STAR:
@@ -3661,7 +3783,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       expr1 = new E_Divide(expr1, expr2) ;
         break;
       default:
-        jj_la1[135] = jj_gen;
+        jj_la1[139] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -3774,7 +3896,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                                  {if (true) return expr ;}
       break;
     default:
-      jj_la1[136] = jj_gen;
+      jj_la1[140] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -3888,7 +4010,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                  {if (true) return asExpr(gn) ;}
       break;
     default:
-      jj_la1[137] = jj_gen;
+      jj_la1[141] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -3983,7 +4105,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
               {if (true) return new E_BNode() ;}
         break;
       default:
-        jj_la1[138] = jj_gen;
+        jj_la1[142] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -4304,7 +4426,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                              {if (true) return expr ;}
       break;
     default:
-      jj_la1[139] = jj_gen;
+      jj_la1[143] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -4324,7 +4446,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       flagsExpr = Expression();
       break;
     default:
-      jj_la1[140] = jj_gen;
+      jj_la1[144] = jj_gen;
       ;
     }
     jj_consume_token(RPAREN);
@@ -4345,7 +4467,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       expr3 = Expression();
       break;
     default:
-      jj_la1[141] = jj_gen;
+      jj_la1[145] = jj_gen;
       ;
     }
     jj_consume_token(RPAREN);
@@ -4368,7 +4490,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       expr4 = Expression();
       break;
     default:
-      jj_la1[142] = jj_gen;
+      jj_la1[146] = jj_gen;
       ;
     }
     jj_consume_token(RPAREN);
@@ -4410,7 +4532,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                    distinct = true ;
         break;
       default:
-        jj_la1[143] = jj_gen;
+        jj_la1[147] = jj_gen;
         ;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -4505,7 +4627,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         expr = Expression();
         break;
       default:
-        jj_la1[144] = jj_gen;
+        jj_la1[148] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -4522,7 +4644,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                                       distinct = true ;
         break;
       default:
-        jj_la1[145] = jj_gen;
+        jj_la1[149] = jj_gen;
         ;
       }
       expr = Expression();
@@ -4538,7 +4660,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                                       distinct = true ;
         break;
       default:
-        jj_la1[146] = jj_gen;
+        jj_la1[150] = jj_gen;
         ;
       }
       expr = Expression();
@@ -4554,7 +4676,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                                       distinct = true ;
         break;
       default:
-        jj_la1[147] = jj_gen;
+        jj_la1[151] = jj_gen;
         ;
       }
       expr = Expression();
@@ -4570,7 +4692,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                                       distinct = true ;
         break;
       default:
-        jj_la1[148] = jj_gen;
+        jj_la1[152] = jj_gen;
         ;
       }
       expr = Expression();
@@ -4586,7 +4708,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                                          distinct = true ;
         break;
       default:
-        jj_la1[149] = jj_gen;
+        jj_la1[153] = jj_gen;
         ;
       }
       expr = Expression();
@@ -4602,7 +4724,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                       distinct = true ;
         break;
       default:
-        jj_la1[150] = jj_gen;
+        jj_la1[154] = jj_gen;
         ;
       }
       expr = Expression();
@@ -4615,14 +4737,14 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         sep = String();
         break;
       default:
-        jj_la1[151] = jj_gen;
+        jj_la1[155] = jj_gen;
         ;
       }
       jj_consume_token(RPAREN);
       agg = AggregatorFactory.createGroupConcat(distinct, expr, sep, ordered) ;
       break;
     default:
-      jj_la1[152] = jj_gen;
+      jj_la1[156] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -4645,7 +4767,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       a = ArgList();
       break;
     default:
-      jj_la1[153] = jj_gen;
+      jj_la1[157] = jj_gen;
       ;
     }
     if ( a == null )
@@ -4678,13 +4800,13 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         uri = iri();
         break;
       default:
-        jj_la1[154] = jj_gen;
+        jj_la1[158] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
       break;
     default:
-      jj_la1[155] = jj_gen;
+      jj_la1[159] = jj_gen;
       ;
     }
       {if (true) return createLiteral(lex, lang, uri) ;}
@@ -4710,7 +4832,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       n = NumericLiteralNegative();
       break;
     default:
-      jj_la1[156] = jj_gen;
+      jj_la1[160] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -4734,7 +4856,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                  {if (true) return createLiteralDouble(t.image) ;}
       break;
     default:
-      jj_la1[157] = jj_gen;
+      jj_la1[161] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -4757,7 +4879,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                           {if (true) return createLiteralDouble(t.image) ;}
       break;
     default:
-      jj_la1[158] = jj_gen;
+      jj_la1[162] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -4780,7 +4902,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                           {if (true) return createLiteralDouble(t.image) ;}
       break;
     default:
-      jj_la1[159] = jj_gen;
+      jj_la1[163] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -4798,7 +4920,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
             {if (true) return XSD_FALSE ;}
       break;
     default:
-      jj_la1[160] = jj_gen;
+      jj_la1[164] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -4825,12 +4947,32 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                                  lex = stripQuotes3(t.image) ;
       break;
     default:
-      jj_la1[161] = jj_gen;
+      jj_la1[165] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
       lex = unescapeStr(lex, t.beginLine, t.beginColumn) ;
       {if (true) return lex ;}
+    throw new Error("Missing return statement in function");
+  }
+
+  final public Number Number() throws ParseException {
+                    Token t ; Number number ;
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case INTEGER:
+      t = jj_consume_token(INTEGER);
+                      number = integerValue(t.image) ;
+      break;
+    case DECIMAL:
+      t = jj_consume_token(DECIMAL);
+                      number = doubleValue(t.image) ;
+      break;
+    default:
+      jj_la1[166] = jj_gen;
+      jj_consume_token(-1);
+      throw new ParseException();
+    }
+    {if (true) return number ;}
     throw new Error("Missing return statement in function");
   }
 
@@ -4847,7 +4989,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                          {if (true) return iri ;}
       break;
     default:
-      jj_la1[162] = jj_gen;
+      jj_la1[167] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -4866,7 +5008,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       {if (true) return resolvePName(t.image, t.beginLine, t.beginColumn) ;}
       break;
     default:
-      jj_la1[163] = jj_gen;
+      jj_la1[168] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -4885,7 +5027,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
                {if (true) return createBNode(t.beginLine, t.beginColumn) ;}
       break;
     default:
-      jj_la1[164] = jj_gen;
+      jj_la1[169] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -4908,7 +5050,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
   public Token jj_nt;
   private int jj_ntk;
   private int jj_gen;
-  final private int[] jj_la1 = new int[165];
+  final private int[] jj_la1 = new int[170];
   static private int[] jj_la1_0;
   static private int[] jj_la1_1;
   static private int[] jj_la1_2;
@@ -4926,25 +5068,25 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
       jj_la1_init_6();
    }
    private static void jj_la1_init_0() {
-      jj_la1_0 = new int[] {0xe400000,0x200,0x300000,0x300000,0x0,0x1800000,0x1800000,0xc000,0xc000,0xc000,0x0,0x0,0xfc00,0x0,0xdc00,0xdc00,0x0,0x0,0x0,0x1c00,0x0,0x0,0x0,0x40000000,0x30000000,0xdc00,0x0,0xdc00,0x1c00,0xdc00,0x0,0xdc00,0xdc00,0x20000000,0x10000000,0x30000000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1c00,0x0,0x1c00,0x0,0xfc00,0x0,0x0,0xfc00,0xfc00,0xfc00,0x0,0x400000,0xfc00,0x0,0x0,0xfc00,0xfc00,0x0,0x0,0x0,0xc000,0x1c00,0xc000,0x0,0x0,0x1c00,0x0,0x1c00,0x0,0x1c00,0x800000,0x0,0x0,0x0,0x0,0xfc00,0xfc00,0x0,0xfc00,0x8dc00,0x0,0x8dc00,0x8dc00,0x0,0xfc00,0x8dc00,0x8dc00,0x0,0x8dc00,0x8dc00,0x0,0x0,0x0,0x0,0x81c00,0x0,0x81c00,0x0,0x81c00,0x81c00,0x81c00,0x81c00,0x0,0x0,0xfc00,0xfc00,0xfc00,0xfc00,0xfc00,0xdc00,0xfc00,0xc000,0x3c00,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xdc00,0xdc00,0x0,0x0,0x0,0x0,0x0,0x800000,0xdc00,0x800000,0x800000,0x800000,0x800000,0x800000,0x800000,0x0,0x0,0x0,0x10000,0x10000,0x0,0x0,0x0,0x0,0x0,0x0,0x1c00,0x1800,0x2000,};
+      jj_la1_0 = new int[] {0x1e400000,0x200,0x300000,0x300000,0x0,0x1800000,0x1800000,0xc000,0xc000,0xc000,0x0,0x0,0xfc00,0x0,0xdc00,0xdc00,0x0,0x0,0x0,0x0,0xc000,0x0,0xc000,0x1c00,0x0,0x0,0x0,0x80000000,0x60000000,0xdc00,0x0,0xdc00,0x1c00,0xdc00,0x0,0xdc00,0xdc00,0x40000000,0x20000000,0x60000000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1c00,0x0,0x1c00,0x0,0xfc00,0x0,0x0,0xfc00,0xfc00,0xfc00,0x0,0x400000,0xfc00,0x0,0x0,0xfc00,0xfc00,0x0,0x0,0x0,0xc000,0x1c00,0xc000,0x0,0x0,0x1c00,0x0,0x1c00,0x0,0x1c00,0x800000,0x0,0x0,0x0,0x0,0xfc00,0xfc00,0x0,0xfc00,0x8dc00,0x0,0x8dc00,0x8dc00,0x0,0xfc00,0x8dc00,0x8dc00,0x0,0x8dc00,0x8dc00,0x0,0x0,0x0,0x0,0x81c00,0x0,0x81c00,0x0,0x81c00,0x81c00,0x81c00,0x81c00,0x0,0x0,0xfc00,0xfc00,0xfc00,0xfc00,0xfc00,0xdc00,0xfc00,0xc000,0x3c00,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xdc00,0xdc00,0x0,0x0,0x0,0x0,0x0,0x800000,0xdc00,0x800000,0x800000,0x800000,0x800000,0x800000,0x800000,0x0,0x0,0x0,0x10000,0x10000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1c00,0x1800,0x2000,};
    }
    private static void jj_la1_init_1() {
-      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x20,0x0,0x0,0x0,0x0,0x0,0x20,0x20,0x0,0x60,0x0,0x0,0x20,0x40,0x20,0x10,0x40,0x20000,0x40000,0x0,0x0,0xdbe0c000,0x10000,0xdbe0c000,0xdbe0c000,0xdbe0c00c,0xc,0xdbe0c000,0xdbe0c00c,0x0,0x0,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x10,0x100,0x100,0x110,0x0,0x100,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x20003b01,0x0,0x0,0x0,0x0,0x20003b01,0x0,0x0,0x2,0x0,0x0,0x0,0x2,0x0,0x2,0x400,0xdbe0c000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x8000,0x8000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xdbe0c000,0xdbe0c000,0x0,0xdbe0c000,0x0,0x0,0x0,0x0,0xdbe0c000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1be00000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,};
+      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x40,0x0,0x0,0x0,0x0,0x0,0x40,0x40,0x0,0xc0,0x0,0x0,0x40,0x80,0x40,0x40,0x0,0x0,0x0,0x20,0x80,0x40000,0x80000,0x0,0x0,0xb7c18000,0x20000,0xb7c18000,0xb7c18000,0xb7c18018,0x18,0xb7c18000,0xb7c18018,0x0,0x0,0x0,0x2,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x20,0x200,0x200,0x220,0x0,0x200,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x40007602,0x0,0x0,0x0,0x0,0x40007602,0x0,0x0,0x4,0x0,0x0,0x0,0x4,0x0,0x4,0x800,0xb7c18000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x10000,0x10000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xb7c18000,0xb7c18000,0x0,0xb7c18000,0x0,0x0,0x0,0x0,0xb7c18000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x37c00000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,};
    }
    private static void jj_la1_init_2() {
-      jj_la1_2 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xfffffffe,0x0,0xfffffffe,0xfffffffe,0xfffffffe,0x0,0xfffffffe,0xfffffffe,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xfffffffe,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xfffffffe,0xfffffffe,0x0,0xfffffffe,0x0,0x0,0x0,0x0,0xfffffffe,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,};
+      jj_la1_2 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xfffffffd,0x0,0xfffffffd,0xfffffffd,0xfffffffd,0x0,0xfffffffd,0xfffffffd,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xfffffffd,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x2,0x2,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xfffffffd,0xfffffffd,0x0,0xfffffffd,0x0,0x0,0x0,0x0,0xfffffffd,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,};
    }
    private static void jj_la1_init_3() {
-      jj_la1_3 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x300000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xeffff,0x0,0xeffff,0xeffff,0xeffff,0x0,0xeffff,0xeffff,0x0,0x0,0x0,0x0,0x0,0xff800000,0xff800000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x800000,0x1800000,0x0,0x0,0x0,0x0,0x0,0x300000,0x0,0x0,0x300000,0x300000,0x300000,0x0,0x0,0x300000,0x0,0x0,0x300000,0x300000,0x0,0x0,0x0,0x0,0x300000,0x0,0x0,0x0,0x300000,0x0,0x300000,0x0,0xeffff,0x0,0x0,0x0,0x0,0x0,0x300000,0x300000,0x0,0x300000,0x0,0x0,0x0,0x0,0x0,0x300000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x300000,0x300000,0x300000,0x300000,0x300000,0x0,0x0,0x0,0x300000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x3effff,0x3effff,0x0,0xeffff,0x0,0x0,0x0,0x0,0x3effff,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x300000,0x0,0x0,0x0,0x0,};
+      jj_la1_3 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x600000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1dffff,0x0,0x1dffff,0x1dffff,0x1dffff,0x0,0x1dffff,0x1dffff,0x0,0x0,0x0,0x0,0x0,0xff000000,0xff000000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1000000,0x3000000,0x0,0x0,0x0,0x0,0x0,0x600000,0x0,0x0,0x600000,0x600000,0x600000,0x0,0x0,0x600000,0x0,0x0,0x600000,0x600000,0x0,0x0,0x0,0x0,0x600000,0x0,0x0,0x0,0x600000,0x0,0x600000,0x0,0x1dffff,0x0,0x0,0x0,0x0,0x0,0x600000,0x600000,0x0,0x600000,0x0,0x0,0x0,0x0,0x0,0x600000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x600000,0x600000,0x600000,0x600000,0x600000,0x0,0x0,0x0,0x600000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x7dffff,0x7dffff,0x0,0x1dffff,0x0,0x0,0x0,0x0,0x7dffff,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x600000,0x0,0x0,0x0,0x0,0x0,};
    }
    private static void jj_la1_init_4() {
-      jj_la1_4 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x20000000,0x20000000,0x20000000,0x0,0x0,0xbe1ff000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x20000000,0x0,0x20000000,0x20000000,0x20000000,0x0,0x20000000,0x20000000,0x0,0x0,0x0,0x0,0x0,0x213,0x213,0x8,0x20,0x8,0x8,0x8,0x8,0x8,0x8,0x200,0x0,0x0,0x400,0x0,0x0,0x80,0x180,0xbe1ff000,0x0,0x0,0xbe1ff000,0xbe1ff000,0xbe1ff000,0x0,0x0,0xbe1ff000,0x0,0x0,0xbe1ff000,0xbe1ff000,0x0,0x0,0x8,0xa0000000,0x1e1ff000,0x0,0xa0000000,0xa0000000,0x1e1ff000,0xa0000000,0x1e1ff000,0x0,0x20000000,0x0,0x0,0xa0000000,0x0,0xa0000000,0xbe1ff000,0xbe1ff000,0x0,0xbe1ff000,0x0,0x0,0x0,0x0,0x0,0xbe1ff000,0x20000000,0x20000000,0x0,0x20000000,0x20000000,0x0,0x0,0x0,0x0,0x20000000,0x0,0x20000000,0x0,0x0,0x20000000,0x0,0x0,0x20000000,0x20000000,0xbe1ff000,0xbe1ff000,0xbe1ff000,0xbe1ff000,0x9e1ff000,0x0,0x0,0x0,0x9e1ff000,0x0,0x0,0x0,0x0,0x1f8000,0x1f8000,0x0,0x0,0x1f8000,0x0,0x0,0x3e1ff000,0x3e1ff000,0xa0000000,0x0,0x0,0x0,0x0,0x0,0x3e1ff000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xa0000000,0x0,0x0,0x1ff000,0x7000,0x38000,0x1c0000,0x0,0x1e000000,0x0,0x0,0x0,};
+      jj_la1_4 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x40000000,0x40000000,0x40000000,0x0,0x0,0x7c3fe000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x3c006000,0x0,0x3c006000,0x0,0x0,0x0,0x0,0x0,0x0,0x40000000,0x0,0x40000000,0x40000000,0x40000000,0x0,0x40000000,0x40000000,0x0,0x0,0x0,0x0,0x0,0x427,0x427,0x10,0x40,0x10,0x10,0x10,0x10,0x10,0x10,0x400,0x0,0x0,0x800,0x0,0x0,0x100,0x300,0x7c3fe000,0x0,0x0,0x7c3fe000,0x7c3fe000,0x7c3fe000,0x0,0x0,0x7c3fe000,0x0,0x0,0x7c3fe000,0x7c3fe000,0x0,0x0,0x10,0x40000000,0x3c3fe000,0x0,0x40000000,0x40000000,0x3c3fe000,0x40000000,0x3c3fe000,0x0,0x40000000,0x0,0x0,0x40000000,0x0,0x40000000,0x7c3fe000,0x7c3fe000,0x0,0x7c3fe000,0x0,0x0,0x0,0x0,0x0,0x7c3fe000,0x40000000,0x40000000,0x0,0x40000000,0x40000000,0x0,0x0,0x0,0x0,0x40000000,0x0,0x40000000,0x0,0x0,0x40000000,0x0,0x0,0x40000000,0x40000000,0x7c3fe000,0x7c3fe000,0x7c3fe000,0x7c3fe000,0x3c3fe000,0x0,0x0,0x0,0x3c3fe000,0x0,0x0,0x0,0x0,0x3f0000,0x3f0000,0x0,0x0,0x3f0000,0x0,0x0,0x7c3fe000,0x7c3fe000,0x40000000,0x0,0x0,0x0,0x0,0x0,0x7c3fe000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x40000000,0x0,0x0,0x3fe000,0xe000,0x70000,0x380000,0x0,0x3c000000,0x6000,0x0,0x0,0x0,};
    }
    private static void jj_la1_init_5() {
-      jj_la1_5 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x200000,0x0,0x0,0x14,0x1,0x0,0x200000,0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x20,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x14,0x0,0x80,0x14,0x14,0x14,0x80,0x0,0x14,0x1,0x80,0x14,0x14,0x80,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x40,0x0,0x40,0x0,0x14,0x14,0x80,0x14,0x0,0x20,0x0,0x0,0x40,0x14,0x4004000,0x4004000,0x20,0x4004000,0x4004000,0x40,0x2000000,0x400000,0x20280000,0x4004000,0x20280000,0x4000,0x2000000,0x4000000,0x4000000,0x0,0x4000000,0x4,0x4,0x14,0x14,0x14,0x14,0x10,0x0,0x10,0x0,0x10,0x20000,0x40000,0x3f00,0x3f00,0x180000,0x0,0x600000,0x600000,0x180000,0x600000,0x600000,0x184000,0x0,0x0,0x0,0x40,0x40,0x40,0x0,0x384000,0x0,0x0,0x0,0x0,0x0,0x0,0x20,0x0,0x0,0x800000,0x800000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x10,};
+      jj_la1_5 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x400000,0x0,0x0,0x29,0x2,0x0,0x400000,0x0,0x2,0x0,0x0,0x0,0x80,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x40,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x29,0x0,0x100,0x29,0x29,0x29,0x100,0x0,0x29,0x2,0x100,0x29,0x29,0x100,0x2,0x0,0x1,0x0,0x0,0x1,0x1,0x0,0x1,0x0,0x0,0x0,0x0,0x80,0x1,0x80,0x1,0x29,0x29,0x100,0x29,0x0,0x40,0x0,0x0,0x80,0x29,0x8008000,0x8008000,0x40,0x8008000,0x8008000,0x80,0x4000000,0x800000,0x40500000,0x8008000,0x40500000,0x8000,0x4000000,0x8000000,0x8000000,0x0,0x8000000,0x8,0x8,0x29,0x29,0x29,0x29,0x21,0x0,0x20,0x0,0x21,0x40000,0x80000,0x7e00,0x7e00,0x300000,0x0,0xc00000,0xc00000,0x300000,0xc00000,0xc00000,0x308000,0x0,0x1,0x0,0x80,0x80,0x80,0x0,0x708000,0x0,0x0,0x0,0x0,0x0,0x0,0x40,0x0,0x1,0x1000000,0x1000000,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x20,};
    }
    private static void jj_la1_init_6() {
-      jj_la1_6 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,};
+      jj_la1_6 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,};
    }
 
   /** Constructor with InputStream. */
@@ -4958,7 +5100,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 165; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 170; i++) jj_la1[i] = -1;
   }
 
   /** Reinitialise. */
@@ -4972,7 +5114,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 165; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 170; i++) jj_la1[i] = -1;
   }
 
   /** Constructor. */
@@ -4982,7 +5124,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 165; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 170; i++) jj_la1[i] = -1;
   }
 
   /** Reinitialise. */
@@ -4992,7 +5134,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 165; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 170; i++) jj_la1[i] = -1;
   }
 
   /** Constructor with generated Token Manager. */
@@ -5001,7 +5143,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 165; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 170; i++) jj_la1[i] = -1;
   }
 
   /** Reinitialise. */
@@ -5010,7 +5152,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 165; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 170; i++) jj_la1[i] = -1;
   }
 
   private Token jj_consume_token(int kind) throws ParseException {
@@ -5061,12 +5203,12 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
   /** Generate ParseException. */
   public ParseException generateParseException() {
     jj_expentries.clear();
-    boolean[] la1tokens = new boolean[201];
+    boolean[] la1tokens = new boolean[202];
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
     }
-    for (int i = 0; i < 165; i++) {
+    for (int i = 0; i < 170; i++) {
       if (jj_la1[i] == jj_gen) {
         for (int j = 0; j < 32; j++) {
           if ((jj_la1_0[i] & (1<<j)) != 0) {
@@ -5093,7 +5235,7 @@ public class SPARQLParser11 extends SPARQLParser11Base implements SPARQLParser11
         }
       }
     }
-    for (int i = 0; i < 201; i++) {
+    for (int i = 0; i < 202; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;
