@@ -100,7 +100,7 @@ import org.apache.jena.sparql.core.Quad ;
 public class CLASS extends PARSERBASE
 {
     boolean allowAggregatesInExpressions = false ;
-
+#ifdef ARQ
     public static void main(String args[]) {
         while (true) {
             StringBuilder queryString = new StringBuilder() ;
@@ -132,6 +132,7 @@ public class CLASS extends PARSERBASE
             }
         }
     }
+#endif
 }
 PARSER_END(CLASS)
 
@@ -154,10 +155,10 @@ void QueryUnit(): { }
 void Query() : { }
 {    
   Prologue()
-  ( SelectQuery() | ConstructQuery() | DescribeQuery() | AskQuery() | JsonQuery()
-// #ifdef ARQ
-//   | JsonTemplateQuery()
-// #endif
+  ( SelectQuery() | ConstructQuery() | DescribeQuery() | AskQuery()
+#ifdef ARQ
+    | JsonQuery()
+#endif
   )
   ValuesClause()
 }
@@ -359,6 +360,7 @@ void AskQuery() : {}
   SolutionModifier()
 }
 
+#ifdef ARQ
 void JsonQuery() : {}
 {
   JsonClause()
@@ -387,6 +389,7 @@ void JsonClause() : { Object o ; String s ; }
   )*
   <RBRACE>
 }
+#endif
 
 // ----
 
@@ -2227,6 +2230,7 @@ String String() : { Token t ; String lex ; }
     }
 }
 
+#ifdef ARQ
 Number Number() : { Token t ; Number number ; }
 {
   (
@@ -2237,6 +2241,7 @@ Number Number() : { Token t ; Number number ; }
     return number ;
   }
 }
+#endif
 
 String iri() : { String iri ; }
 {
@@ -2338,7 +2343,9 @@ TOKEN [IGNORE_CASE] :
 |  < SELECT:      "select" >
 |  < DISTINCT:    "distinct" >
 |  < REDUCED:     "reduced" >
+#ifdef ARQ
 |  < JSON:        "json" >
+#endif
 |  < DESCRIBE:    "describe" >
 |  < CONSTRUCT:   "construct" >
 |  < ASK:         "ask" >
