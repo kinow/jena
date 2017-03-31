@@ -542,7 +542,7 @@ public class ResultSetFormatter {
        {
            jWriter.startObject() ;
            JsonObject jsonItem = jsonItems.next() ;
-           for (Entry<String, JsonValue> entries: jsonItem.entrySet()) 
+           for (Entry<String, JsonValue> entry: jsonItem.entrySet()) 
            {
                JsonValue value = entries.getValue() ;
                String val = value.getAsString().value() ;
