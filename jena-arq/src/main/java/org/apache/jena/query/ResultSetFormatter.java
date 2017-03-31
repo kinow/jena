@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets ;
 import java.util.ArrayList ;
 import java.util.Iterator ;
 import java.util.List ;
+import java.util.Map.Entry;
 
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
@@ -541,11 +542,11 @@ public class ResultSetFormatter {
        {
            jWriter.startObject() ;
            JsonObject jsonItem = jsonItems.next() ;
-           for (String key: jsonItem.keys()) 
+           for (Entry<String, JsonValue> entries: jsonItem.entrySet()) 
            {
-               JsonValue value = jsonItem.get(key) ;
+               JsonValue value = entries.getValue() ;
                String val = value.getAsString().value() ;
-               jWriter.pair(key, val) ;
+               jWriter.pair(entries.getKey(), val) ;
            }
            jWriter.finishObject() ;
        }
