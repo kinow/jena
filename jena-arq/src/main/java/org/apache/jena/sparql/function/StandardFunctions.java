@@ -95,6 +95,8 @@ public class StandardFunctions
         addCastTemporal(registry, XSDDatatype.XSDgMonthDay) ;
         addCastTemporal(registry, XSDDatatype.XSDgDay) ;
 
+        add(registry, ARQConstants.ARQFunctionLibraryURI+"collation",        FN_Collation.class) ;
+
         //TODO op:numeric-greater-than etc.
         //TODO sparql:* for all the SPARQL builtins.
         

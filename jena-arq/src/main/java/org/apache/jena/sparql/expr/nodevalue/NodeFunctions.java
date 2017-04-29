@@ -188,6 +188,10 @@ public class NodeFunctions {
         return NodeValue.makeString(str(nv.asNode())) ;
     }
 
+    public static NodeValue str(NodeValue nv, String collation) {
+        return NodeValue.makeString(str(nv.asNode()), collation) ;
+    }
+
     public static String str(Node node) {
         if ( node.isLiteral() )
             return node.getLiteral().getLexicalForm() ;
