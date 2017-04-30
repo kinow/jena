@@ -29,6 +29,8 @@ public class NodeValueString extends NodeValue
     // A plain string, with no language tag, or an xsd:string.
     
     private String string ; 
+    // Here we are adding a new feature to a NodeValueString. Instead, we could try to create a new type
+    // that extends NodeValue. e.g. NodeValueCollatedString, moving this property and half constructors away
     private final String collation;
 
     public NodeValueString(String str)         { this(str, (String) null); }

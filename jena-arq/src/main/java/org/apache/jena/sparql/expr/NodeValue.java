@@ -248,6 +248,7 @@ public abstract class NodeValue extends ExprNode
     public static NodeValue makeString(String s)
     { return new NodeValueString(s) ; }
 
+    // instead of changing makeString, we can add another method like makeCollatedString
     public static NodeValue makeString(String s, String collation)
     { return new NodeValueString(s, collation) ; }
 
@@ -755,6 +756,8 @@ public abstract class NodeValue extends ExprNode
             case VSPACE_NUM:        return XSDFuncOp.compareNumeric(nv1, nv2) ;
             case VSPACE_STRING:
             {
+                // Not sure if this would fit in XSDFuncOp, maybe passing a locale string or Collator object
+                // to compareString
                 int cmp = 0;
                 String c1 = nv1.getCollation();
                 String c2 = nv2.getCollation();
