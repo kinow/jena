@@ -28,10 +28,7 @@ import org.apache.jena.atlas.RuntimeIOException ;
 import org.apache.jena.fuseki.Fuseki ;
 import org.apache.jena.fuseki.server.* ;
 import org.apache.jena.query.QueryCancelledException ;
-import org.apache.jena.riot.Lang ;
-import org.apache.jena.riot.RDFDataMgr ;
-import org.apache.jena.riot.ReaderRIOT ;
-import org.apache.jena.riot.RiotException ;
+import org.apache.jena.riot.*;
 import org.apache.jena.riot.system.ErrorHandler ;
 import org.apache.jena.riot.system.ErrorHandlerFactory ;
 import org.apache.jena.riot.system.StreamRDF ;
@@ -59,7 +56,7 @@ public abstract class ActionSPARQL extends ActionBase
         
         String datasetUri = mapRequestToDataset(action) ;
         if ( datasetUri != null ) {
-            dataAccessPoint = DataAccessPointRegistry.get().get(datasetUri) ;
+            dataAccessPoint = action.getDataAccessPointRegistry().get(datasetUri) ;
             if ( dataAccessPoint == null ) {
                 ServletOps.errorNotFound("No dataset for URI: "+datasetUri) ;
                 return ;
@@ -199,12 +196,15 @@ public abstract class ActionSPARQL extends ActionBase
 
     public static void parse(HttpAction action, StreamRDF dest, InputStream input, Lang lang, String base) {
         try {
-            ReaderRIOT r = RDFDataMgr.createReader(lang) ;
-            if ( r == null )
+            if ( ! RDFParserRegistry.isRegistered(lang) )
                 ServletOps.errorBadRequest("No parser for language '"+lang.getName()+"'") ;
             ErrorHandler errorHandler = ErrorHandlerFactory.errorHandlerStd(action.log);
-            r.setErrorHandler(errorHandler); 
-            r.read(input, base, null, dest, null) ; 
+            RDFParser.create()
+                .errorHandler(errorHandler)
+                .source(input)
+                .lang(lang)
+                .base(base)
+                .parse(dest);
         } 
         catch (RiotException ex) { ServletOps.errorBadRequest("Parse error: "+ex.getMessage()) ; }
     }

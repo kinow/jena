@@ -23,15 +23,23 @@ import static org.apache.jena.fuseki.Fuseki.serverLog ;
 
 import java.io.FileInputStream ;
 
+import javax.servlet.ServletContext ;
+
 import org.apache.jena.atlas.lib.DateTimeUtils ;
 import org.apache.jena.atlas.lib.FileOps ;
 import org.apache.jena.fuseki.Fuseki ;
 import org.apache.jena.fuseki.FusekiException ;
 import org.apache.jena.fuseki.mgt.MgtJMX ;
+import org.apache.jena.fuseki.server.DataAccessPointRegistry ;
 import org.apache.jena.fuseki.server.FusekiEnv ;
 import org.eclipse.jetty.security.* ;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator ;
-import org.eclipse.jetty.server.* ;
+import org.eclipse.jetty.server.HttpConnectionFactory ;
+import org.eclipse.jetty.server.Server ;
+import org.eclipse.jetty.server.ServerConnector ;
+import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker ;
+import org.eclipse.jetty.server.handler.ContextHandler ;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler ;
 import org.eclipse.jetty.servlet.ServletContextHandler ;
 import org.eclipse.jetty.util.security.Constraint ;
 import org.eclipse.jetty.webapp.WebAppContext ;
@@ -63,7 +71,9 @@ public class JettyFuseki {
     private JettyServerConfig serverConfig ;
 
     // The jetty server.
+    
     private Server              server         = null ;
+    private ServletContext      servletContext = null ;
     
     // webapp setup - standard maven layout
     public static       String contextpath     = "/" ;
@@ -71,7 +81,6 @@ public class JettyFuseki {
     public static final String resourceBase1   = "webapp" ;
     // Development
     public static final String resourceBase2   = "src/main/webapp" ;
-    
 
     /**
      * Default setup which requires a {@link org.apache.jena.fuseki.jetty.JettyServerConfig}
@@ -88,9 +97,15 @@ public class JettyFuseki {
     
     private JettyFuseki(JettyServerConfig config) {
         this.serverConfig = config ;
-        buildServerWebapp(serverConfig.contextPath, serverConfig.jettyConfigFile, config.enableCompression) ;
+        buildServerWebapp(serverConfig.contextPath, serverConfig.jettyConfigFile) ;
         if ( mgtConnector == null )
             mgtConnector = serverConnector ;
+
+        if ( config.enableCompression ) {
+            GzipHandler gzipHandler = new GzipHandler();
+            gzipHandler.setHandler(server.getHandler());
+            server.setHandler(gzipHandler); 
+        }
     }
 
     /**
@@ -106,8 +121,12 @@ public class JettyFuseki {
         if ( buildDate != null && buildDate.equals("${build.time.xsd}") )
             buildDate = DateTimeUtils.nowAsXSDDateTimeString() ;
         
-        if ( version != null && buildDate != null )
-            serverLog.info(format("%s %s %s", Fuseki.NAME, version, buildDate)) ;
+        if ( version != null ) {
+            if ( Fuseki.developmentMode && buildDate != null )
+                serverLog.info(format("%s %s %s", Fuseki.NAME, version, buildDate)) ;
+            else
+                serverLog.info(format("%s %s", Fuseki.NAME, version)) ;
+        }
         // This does not get set usefully for Jetty as we use it.
         // String jettyVersion = org.eclipse.jetty.server.Server.getVersion() ;
         // serverLog.info(format("Jetty %s",jettyVersion)) ;
@@ -120,10 +139,10 @@ public class JettyFuseki {
             server.start() ;
         } catch (java.net.BindException ex) {
             serverLog.error("SPARQLServer (port="+serverConnector.getPort()+"): Failed to start server: " + ex.getMessage()) ;
-            System.exit(1) ;
+            throw new FusekiException("BindException: port="+serverConnector.getPort()+": Failed to start server: " + ex.getMessage(), ex) ;
         } catch (Exception ex) {
             serverLog.error("SPARQLServer: Failed to start server: " + ex.getMessage(), ex) ;
-            System.exit(1) ;
+            throw new FusekiException("Failed to start server: " + ex.getMessage(), ex) ;
         }
         String now = DateTimeUtils.nowAsString() ;
         serverLog.info(format("Started %s on port %d", now, serverConnector.getPort())) ;
@@ -206,6 +225,10 @@ public class JettyFuseki {
             x = System.getProperty(name) ;
         return x ;
     }
+    
+    public DataAccessPointRegistry getDataAccessPointRegistry() {
+        return DataAccessPointRegistry.get(servletContext) ;
+    }
 
     private static String tryResourceBase(String maybeResourceBase, String currentResourceBase) {
         if ( currentResourceBase != null )
@@ -215,7 +238,7 @@ public class JettyFuseki {
         return currentResourceBase ;
     }
     
-    private void buildServerWebapp(String contextPath, String jettyConfig, boolean enableCompression) {
+    private void buildServerWebapp(String contextPath, String jettyConfig) {
         if ( jettyConfig != null )
             // --jetty-config=jetty-fuseki.xml
             // for detailed configuration of the server using Jetty features.
@@ -224,12 +247,22 @@ public class JettyFuseki {
             defaultServerConfig(serverConfig.port, serverConfig.loopback) ;
 
         WebAppContext webapp = createWebApp(contextPath) ;
+        if ( false /*enable symbolic links */ ) {
+            // See http://www.eclipse.org/jetty/documentation/current/serving-aliased-files.html
+            // Record what would be needed:
+            // 1 - Allow all symbolic links without checking
+            webapp.addAliasCheck(new ContextHandler.ApproveAliases());
+            // 2 - Check links are to valid resources. But default for Unix?
+            webapp.addAliasCheck(new AllowSymLinkAliasChecker()) ;
+        }
+        servletContext = webapp.getServletContext() ;
         server.setHandler(webapp) ;
         // Replaced by Shiro.
         if ( jettyConfig == null && serverConfig.authConfigFile != null )
             security(webapp, serverConfig.authConfigFile) ;
     }
     
+    // This is now provided by Shiro.
     private static void security(ServletContextHandler context, String authfile) {
         Constraint constraint = new Constraint() ;
         constraint.setName(Constraint.__BASIC_AUTH) ;
@@ -276,10 +309,15 @@ public class JettyFuseki {
         // Some people do try very large operations ... really, should use POST.
         f1.getHttpConfiguration().setRequestHeaderSize(512 * 1024);
         f1.getHttpConfiguration().setOutputBufferSize(5 * 1024 * 1024) ;
-        
-        //SslConnectionFactory f2 = new SslConnectionFactory() ;
-        
-        ServerConnector connector = new ServerConnector(server, f1) ; //, f2) ;
+        // Do not add "Server: Jetty(....) when not a development system.
+        if ( ! Fuseki.outputJettyServerHeader )
+            f1.getHttpConfiguration().setSendServerVersion(false) ;
+
+        // https is better done with a Jetty configuration file
+        // because there are several things to configure. 
+        // See "examples/fuseki-jetty-https.xml"
+
+        ServerConnector connector = new ServerConnector(server, f1) ;
         connector.setPort(port) ;
         server.addConnector(connector);
         if ( loopback )

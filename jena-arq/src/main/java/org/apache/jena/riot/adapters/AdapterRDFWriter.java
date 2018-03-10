@@ -20,17 +20,28 @@ package org.apache.jena.riot.adapters;
 
 import java.io.OutputStream ;
 import java.io.Writer ;
+import java.util.Map ;
 
+import org.apache.jena.atlas.logging.Log ;
 import org.apache.jena.graph.Graph ;
 import org.apache.jena.rdf.model.ModelFactory ;
 import org.apache.jena.rdf.model.RDFWriter ;
 import org.apache.jena.riot.Lang ;
+import org.apache.jena.riot.SysRIOT ;
+import org.apache.jena.riot.WriterGraphRIOT ;
 import org.apache.jena.riot.system.PrefixMap ;
 import org.apache.jena.riot.writer.WriterGraphRIOTBase ;
 import org.apache.jena.sparql.util.Context ;
 
-/** Wrapper for using old-style Jena RDFWriters in RIOT. */
-
+/**
+ * Adapter providing RIOT interface {@link WriterGraphRIOT} over an old-style
+ * Jena {@link RDFWriter}. Subclasses of this class are used for RDF/XML
+ * (basic and abbrevated) in RIOT.
+ * <p>
+ * See {@link RDFWriterRIOT} for the class plugged into RIOT that provides the
+ * {@link RDFWriter} interface to Jena core operations. It is {@link RDFWriter} over
+ * a {@link WriterGraphRIOT}.
+ */
 public abstract class AdapterRDFWriter extends WriterGraphRIOTBase
 {
     protected abstract RDFWriter create() ;
@@ -41,6 +52,7 @@ public abstract class AdapterRDFWriter extends WriterGraphRIOTBase
     public void write(Writer out, Graph graph, PrefixMap prefixMap, String baseURI, Context context)
     {
         RDFWriter w = create() ;
+        setProperties(w, context) ;
         w.write(ModelFactory.createModelForGraph(graph), out, baseURI) ;
     }
 
@@ -48,7 +60,21 @@ public abstract class AdapterRDFWriter extends WriterGraphRIOTBase
     public void write(OutputStream out, Graph graph, PrefixMap prefixMap, String baseURI, Context context)
     {
         RDFWriter w = create() ;
+        setProperties(w, context) ;
         w.write(ModelFactory.createModelForGraph(graph), out, baseURI) ;
     }
+    
+    private static void setProperties(RDFWriter w, Context context) {
+        try { 
+            @SuppressWarnings("unchecked")
+            Map<String, Object> p = (Map<String, Object>)(context.get(SysRIOT.sysRdfWriterProperties)) ;
+            if ( p != null )
+                p.forEach((k,v) -> w.setProperty(k, v)) ;
+        } catch (Throwable ex) {
+            Log.warn(AdapterRDFWriter.class, "Problem setting properties", ex);
+        }
+    }
+
+
 }
 

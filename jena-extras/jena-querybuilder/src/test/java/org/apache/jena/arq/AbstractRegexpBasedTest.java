@@ -33,14 +33,16 @@ public abstract class AbstractRegexpBasedTest {
 	protected static final String OPEN_PAREN = "\\(" + OPT_SPACE;
 	protected static final String CLOSE_PAREN = OPT_SPACE + "\\)";
 	protected static final String QUOTE = "\\\"";
-	protected static final String LT = "\\<";
-	protected static final String GT = "\\>";
-	protected static final String EQ = "=";
+	protected static final String LT = "\\<"+OPT_SPACE;
+	protected static final String GT = "\\>"+OPT_SPACE;
+	protected static final String EQ = "="+OPT_SPACE;
 	protected static final String DOT = OPT_SPACE+"\\.";
 	protected static final String ORDER_BY = "ORDER" + SPACE + "BY" + SPACE;
 	protected static final String GROUP_BY = "GROUP" + SPACE + "BY" + SPACE;
 	protected static final String HAVING = "HAVING" + SPACE;
 	protected static final String PREFIX = "PREFIX" + SPACE;
+	protected static final String CONSTRUCT = "CONSTRUCT" + SPACE;
+	protected static final String ASK = "ASK" + SPACE;
 	protected static final String SELECT = "SELECT" + SPACE;
 	protected static final String UNION = "UNION" + SPACE;
 	protected static final String LIMIT = "LIMIT" + SPACE;
@@ -48,6 +50,7 @@ public abstract class AbstractRegexpBasedTest {
 	protected static final String OPTIONAL = "OPTIONAL" + SPACE;
 	protected static final String BIND = "BIND";
 	protected static final String SEMI = OPT_SPACE+"\\;";
+	protected static final String VALUES = "VALUES" + SPACE;
 
 	protected static String quote(String s) {
 		return String.format("%s%s%s", QUOTE, s, QUOTE);
@@ -60,7 +63,7 @@ public abstract class AbstractRegexpBasedTest {
 	/** Regex for rdf:type as a URI or the abbreviation 'a' */
 	protected static String regexRDFtype = "("+uri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")+"|a)" ;
 	
-	protected final String var(String s) {
+	protected final static String var(String s) {
 		return "\\?" + s;
 	}
 
@@ -68,12 +71,12 @@ public abstract class AbstractRegexpBasedTest {
 	 * RDF 1.0 : use ^^xsd:string form.
 	 * RDF 1.1 : use untyped form.
 	 */
-	protected final String presentStringType() {
+	protected final static String presentStringType() {
 	    return 
 	        JenaRuntime.isRDF11 ? "" : "\\^\\^\\<http://www.w3.org/2001/XMLSchema#string\\>" ;
 	}
 
-	protected final void assertNotContainsRegex(String expected, String lst) {
+	protected final static void assertNotContainsRegex(String expected, String lst) {
 
 		Pattern patt = Pattern.compile(expected, Pattern.DOTALL);
 
@@ -82,7 +85,7 @@ public abstract class AbstractRegexpBasedTest {
 		}
 	}
 
-	protected final void assertContainsRegex(String expected, String entry) {
+	protected final static void assertContainsRegex(String expected, String entry) {
 
 		Pattern patt = Pattern.compile(expected, Pattern.DOTALL);
 		if (patt.matcher(entry).find()) {
@@ -91,7 +94,7 @@ public abstract class AbstractRegexpBasedTest {
 		fail(String.format("%s not found in %s", expected, entry));
 	}
 
-	protected final void assertNotContainsRegex(String expected, String[] lst) {
+	protected final static void assertNotContainsRegex(String expected, String[] lst) {
 
 		Pattern patt = Pattern.compile(expected, Pattern.DOTALL);
 		for (String s : lst) {
@@ -102,7 +105,7 @@ public abstract class AbstractRegexpBasedTest {
 		}
 	}
 
-	protected final void assertContainsRegex(String expected, String[] lst) {
+	protected final static void assertContainsRegex(String expected, String[] lst) {
 		Pattern patt = Pattern.compile(expected, Pattern.DOTALL|Pattern.CASE_INSENSITIVE);
 		for (String s : lst) {
 			if (patt.matcher(s).find()) {

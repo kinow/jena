@@ -35,13 +35,11 @@ public class PathEval
     /** Evaluate a path : SPARQL semantics */
     static public Iterator<Node> eval(Graph graph, Node node, Path path, Context context) {
         return eval$(graph, node, path, new PathEngineSPARQL(graph, true, context)) ;
-        // return eval$(graph, node, path, new PathEngineN(graph, true)) ;
     }
 
     /** Evaluate a path */
     static public Iterator<Node> evalReverse(Graph graph, Node node, Path path, Context context) {
         return eval$(graph, node, path, new PathEngineSPARQL(graph, false, context)) ;
-        // return eval$(graph, node, path, new PathEngineN(graph, false)) ;
     }
 
     /** Evaluate a path : counting semantics */
@@ -65,13 +63,13 @@ public class PathEval
     }
 
     /** Evaluate a path */
-    static void eval$(Graph graph, Node node, Path path, PathEngine engine, Collection<Node> acc) {
+    /*package*/ static void eval$(Graph graph, Node node, Path path, PathEngine engine, Collection<Node> acc) {
         PathEvaluator evaluator = new PathEvaluator(graph, node, acc, engine) ;
         path.visit(evaluator) ;
     }
 
     /** Evaluate a path */
-    static Iter<Node> eval$(Graph graph, Node node, Path path, PathEngine engine) {
+    /*package*/ static Iter<Node> eval$(Graph graph, Node node, Path path, PathEngine engine) {
         Collection<Node> acc = new ArrayList<>() ;
         eval$(graph, node, path, engine, acc); 
         return Iter.iter(acc) ;

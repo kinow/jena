@@ -60,13 +60,13 @@ public abstract class AbstractResultSetTests {
     public static void globalSetup() {
         // Empty dataset
         if (empty == null) {
-            empty = DatasetFactory.createMem();
+            empty = DatasetFactory.create();
         }
 
         // Build a dataset that has one of every type we expect to
         // commonly see
         if (ds == null) {
-            ds = DatasetFactory.createMem();
+            ds = DatasetFactory.create();
 
             // Create model and our RDF terms
             Model m = ModelFactory.createDefaultModel();
@@ -2379,7 +2379,7 @@ public abstract class AbstractResultSetTests {
      */
     @Test(expected = SQLException.class)
     public void results_bad_creation_01() throws SQLException {
-        new AskResults(null, true, false);
+        new AskResults(null, true, false).close();
     }
 
     /**
@@ -3413,13 +3413,9 @@ public abstract class AbstractResultSetTests {
      */
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void results_bad_updates_60() throws SQLException {
-        ResultSet rset = this.createResults(ds, "SELECT * WHERE { ?s ?p ?o }");
-
-        try {
+        try (ResultSet rset = this.createResults(ds, "SELECT * WHERE { ?s ?p ?o }")) {
             rset.updateNCharacterStream("s", (Reader) null);
-        } finally {
-            rset.close();
-        }
+        } 
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.jena.riot.system;
 
 import java.util.Map;
+import java.util.function.BiConsumer ;
 
 import org.apache.jena.atlas.lib.Pair;
 import org.apache.jena.iri.IRI;
@@ -72,6 +73,11 @@ public interface PrefixMap {
     public abstract Map<String, String> getMappingCopyStr();
 
     /**
+     * Apply a {@link BiConsumer}{@code <String, IRI>} to each entry in the Prefixmap.
+     */
+    public abstract void forEach(BiConsumer<String, IRI> action) ;
+
+    /**
      * Add a prefix, overwrites any existing association
      * 
      * @param prefix
@@ -121,6 +127,11 @@ public interface PrefixMap {
      *            Prefix to delete
      */
     public abstract void delete(String prefix);
+
+    /**
+     * Clear all prefixes.
+     */
+    public abstract void clear();
 
     /**
      * Gets whether the map contains a given prefix

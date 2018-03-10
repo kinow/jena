@@ -21,6 +21,7 @@ package org.apache.jena.fuseki.server;
 import static java.lang.String.format ;
 
 import java.io.IOException ;
+import java.net.ServerSocket;
 import java.nio.file.DirectoryStream ;
 import java.nio.file.Files ;
 import java.nio.file.Path ;
@@ -29,6 +30,7 @@ import java.util.ArrayList ;
 import java.util.List ;
 
 import org.apache.jena.atlas.lib.InternalErrorException ;
+import org.apache.jena.fuseki.FusekiException;
 import org.apache.jena.fuseki.servlets.HttpAction ;
 import org.apache.jena.fuseki.servlets.ServletOps ;
 
@@ -69,7 +71,7 @@ public class FusekiEnv {
     public enum INIT {
         // Default values of FUSEKI_HOME, and FUSEKI_BASE. 
         WAR         (null, "/etc/fuseki") , 
-        EMBEDDED    (".", "run") ,
+        EMBEDDED    (null, null) ,
         STANDALONE  (".", "run") ,
         TEST        ("src/main/webapp", "target/run") ,
         UNSET       (null, null) ;
@@ -106,12 +108,16 @@ public class FusekiEnv {
     public static final String   ENV_runArea     = "run" ;
     private static boolean       initialized     = false ;
     
-    /** Initialize the server */
+    /** Initialize the server : standalone and WAR versions : not embedded */
     public static synchronized void setEnvironment() {
         if ( initialized )
             return ;
+        resetEnvironment();
+    }
+    
+    /** Reset environment - use with care and bfore server start up */ 
+    public static synchronized void resetEnvironment() {
         initialized = true ;
-        
         logInit("FusekiEnv:Start: ENV_FUSEKI_HOME = %s : ENV_FUSEKI_BASE = %s : MODE = %s", FUSEKI_HOME, FUSEKI_BASE, mode) ;
         
         if ( mode == null || mode == INIT.UNSET )
@@ -171,7 +177,16 @@ public class FusekiEnv {
             x = System.getProperty(name) ;
         return x ;
     }
-
+    
+    /** Choose an unused port for a server to listen on */
+    public static int choosePort() {
+        try (ServerSocket s = new ServerSocket(0)) {
+            return s.getLocalPort();
+        } catch (IOException ex) {
+            throw new FusekiException("Failed to find a port");
+        }
+    }
+    
     /** Dataset set name to configuration file name. */
     public static String datasetNameToConfigurationFile(HttpAction action, String dsName) {
         List<String> existing = existingConfigurationFile(dsName) ;

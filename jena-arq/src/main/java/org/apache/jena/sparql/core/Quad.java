@@ -18,27 +18,29 @@
 
 package org.apache.jena.sparql.core;
 
+import java.io.IOException;
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.Objects;
+import java.util.function.Function;
 
 import org.apache.jena.graph.Node ;
 import org.apache.jena.graph.NodeFactory ;
 import org.apache.jena.graph.Triple ;
+import org.apache.jena.riot.system.Serializer;
 
-public class Quad
-{
+public class Quad implements Serializable 
+{    
     // Create QuadNames? GraphNames?
     
+    /** Name of the default for explict use in GRAPH */
+    public static final Node defaultGraphIRI        =  NodeFactory.createURI("urn:x-arq:DefaultGraph") ;
+
     /** Name of the default graph as used by parsers and in quad form of algebra. 
      *  Not for access to the default graph by name - use Quad.defaultGraphIRI.
      */ 
     public static final Node defaultGraphNodeGenerated     =  NodeFactory.createURI("urn:x-arq:DefaultGraphNode") ;
     
-    // These are convenience constants for other systems to give special
-    // interpretation to these "named" graphs.  
-    
-    /** Name of the default for explict use in GRAPH */
-    public static final Node defaultGraphIRI        =  NodeFactory.createURI("urn:x-arq:DefaultGraph") ;
-
     /** Name of the merge of all named graphs (use this for the graph of all named graphs) */
     public static final Node unionGraph           =  NodeFactory.createURI("urn:x-arq:UnionGraph") ;
 
@@ -95,7 +97,7 @@ public class Quad
         return defaultGraphNodeGenerated.equals(node) ;
     }
     
-    /** Default, concrete graph (either generated or explicitly named) -- not triple-in-quad*/
+    /** Default, explicitly named concrete graph */
     public static boolean isDefaultGraphExplicit(Node node)
     {
         return defaultGraphIRI.equals(node) ; 
@@ -165,6 +167,22 @@ public class Quad
         
         return true ;
     }
+    
+    // ---- Serializable
+    protected Object writeReplace() throws ObjectStreamException {
+        Function<Quad, Object> function =  Serializer.getQuadSerializer() ;
+        if ( function == null )
+            throw new IllegalStateException("Function for Quad.writeReplace not set") ;
+        return function.apply(this);
+    }
+    // Any attempt to serialize without replacement is an error.
+    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+        throw new IllegalStateException(); 
+    }
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        throw new IllegalStateException();
+    }
+    // ---- Serializable
     
     @Override
     public int hashCode() 

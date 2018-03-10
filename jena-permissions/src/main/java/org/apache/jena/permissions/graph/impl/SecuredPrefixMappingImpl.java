@@ -104,6 +104,13 @@ public class SecuredPrefixMappingImpl extends SecuredItemImpl implements
 	}
 
 	@Override
+    public PrefixMapping clearNsPrefixMap() {
+	    checkUpdate();
+        holder.getBaseItem().clearNsPrefixMap() ;
+        return holder.getSecuredItem();
+    }
+
+    @Override
 	public boolean samePrefixMappingAs(final PrefixMapping other)
 			throws ReadDeniedException, AuthenticationRequiredException {
 		checkRead();
@@ -141,6 +148,18 @@ public class SecuredPrefixMappingImpl extends SecuredItemImpl implements
 		checkRead();
 		return holder.getBaseItem().shortForm(uri);
 	}
+	
+    @Override
+    public boolean hasNoMappings() {
+        checkRead();
+        return holder.getBaseItem().hasNoMappings();
+    }
+
+    @Override
+    public int numPrefixes() {
+        checkRead();
+        return holder.getBaseItem().numPrefixes();
+    }
 
 	@Override
 	public SecuredPrefixMapping withDefaultMappings(final PrefixMapping map)

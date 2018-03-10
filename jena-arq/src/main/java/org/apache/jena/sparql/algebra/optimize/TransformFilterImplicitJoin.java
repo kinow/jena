@@ -18,16 +18,15 @@
 
 package org.apache.jena.sparql.algebra.optimize;
 
-import static org.apache.jena.atlas.lib.CollectionUtils.disjoint;
-
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.jena.atlas.lib.Pair;
-import org.apache.jena.atlas.lib.Tuple;
+import org.apache.jena.atlas.lib.tuple.Tuple ;
 import org.apache.jena.sparql.algebra.Op ;
 import org.apache.jena.sparql.algebra.OpVars ;
 import org.apache.jena.sparql.algebra.TransformCopy ;
@@ -137,7 +136,7 @@ public class TransformFilterImplicitJoin extends TransformCopy {
             op = rebuild((Op2) subOp, ops);
             // Put all filters - either we optimized, or we left alone.
             // Either way, the complete set of filter expressions.
-            op = OpFilter.filter(exprs, op);
+            op = OpFilter.filterBy(exprs, op);
             return op;
         }
         
@@ -163,7 +162,7 @@ public class TransformFilterImplicitJoin extends TransformCopy {
 
         // ---- Place any filter expressions around the processed sub op.
         if (remaining.size() > 0)
-            op = OpFilter.filter(remaining, op);
+            op = OpFilter.filterBy(remaining, op);
         return op;
     }
 
@@ -217,7 +216,7 @@ public class TransformFilterImplicitJoin extends TransformCopy {
         // substitution will be safe
 
         // Should get 5 sets
-        if (varsByPosition.size() != 5)
+        if (varsByPosition.len() != 5)
             return false;
 
         // If anything is used in the object/unknown position then we
@@ -366,7 +365,7 @@ public class TransformFilterImplicitJoin extends TransformCopy {
 
     private static boolean safeToTransform(Collection<Var> varsEquality, VarExprList varsExprList) {
         // If the named variable is used, unsafe to rewrite.
-        return disjoint(varsExprList.getVars(), varsEquality);
+        return Collections.disjoint(varsExprList.getVars(), varsEquality);
     }
 
     // -- A special case

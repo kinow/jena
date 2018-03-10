@@ -41,29 +41,61 @@ public class StreamRDFLib
     /** Send everything to nowhere ... efficiently */
     public static StreamRDF sinkNull()                       { return new StreamRDFBase() ; }
 
+    /**
+     * Create a {@link StreamRDF} that outputs to an {@link OutputStream}. It is important
+     * to call {@link StreamRDF#start} and {@link StreamRDF#finish} because the output is
+     * buffered.
+     */
     public static StreamRDF writer(OutputStream out)         { return new WriterStreamRDFPlain(IO.wrapUTF8(out)) ; }
+    
+    /** Create a {@link StreamRDF} that outputs to an {@link AWriter}. */
     public static StreamRDF writer(AWriter out)              { return new WriterStreamRDFPlain(out) ; }
+    
+    /**
+     * Create a {@link StreamRDF} that outputs to an {@link Writer}. It is important to
+     * call {@link StreamRDF#start} and {@link StreamRDF#finish} because the output is
+     * buffered.
+     */
     public static StreamRDF writer(Writer out)               { return new WriterStreamRDFPlain(IO.wrap(out)) ; }
     
-    public static StreamRDF writer(OutputStream out, CharSpace charSpace)
-    {
+    /**
+     * Create a {@link StreamRDF} that outputs to an {@link OutputStream} with a specific
+     * {@link CharSpace} (ASCII or UTF-8).
+     * <p>
+     * It is important to call {@link StreamRDF#start}
+     * and {@link StreamRDF#finish} because the output is buffered.
+     */
+    public static StreamRDF writer(OutputStream out, CharSpace charSpace) {
         switch (charSpace) {
-        case ASCII:
-            return new WriterStreamRDFPlain(IO.wrapASCII(out), charSpace);
-        case UTF8:
-        default:
-            return writer(out);
+            case ASCII :
+                return new WriterStreamRDFPlain(IO.wrapASCII(out), charSpace) ;
+            case UTF8 :
+            default :
+                return writer(out) ;
         }
     }
-    
-    public static StreamRDF writer(AWriter out, CharSpace charSpace)
-    {
-        return new WriterStreamRDFPlain(out, charSpace);
+
+    /**
+     * Create a {@link StreamRDF} that outputs to an {@link OutputStream} with a specific
+     * {@link CharSpace} (ASCII or UTF-8).
+     * <p>
+     * It is important to call {@link StreamRDF#start}
+     * and {@link StreamRDF#finish} because the output is buffered.
+     */
+    public static StreamRDF writer(AWriter out, CharSpace charSpace) {
+        return new WriterStreamRDFPlain(out, charSpace) ;
     }
-    
-    public static StreamRDF writer(Writer out, CharSpace charSpace)
-    {
-        return new WriterStreamRDFPlain(IO.wrap(out), charSpace);
+
+    /**
+     * Create a {@link StreamRDF} that outputs to an {@link Writer} with a specific
+     * {@link CharSpace} (ASCII or UTF-8) writing out-of-range codepoints (if ASCII)
+     * as "\ uXXXX".
+     * <p>
+     * It is important to call {@link StreamRDF#start}
+     * and {@link StreamRDF#finish} because the output is buffered.
+     */
+    public static StreamRDF writer(Writer out, CharSpace charSpace) {
+        return new WriterStreamRDFPlain(IO.wrap(out), charSpace) ;
     }
 
     public static StreamRDF graph(Graph graph)               { return new ParserOutputGraph(graph) ; }
@@ -105,7 +137,7 @@ public class StreamRDFLib
         { super(base) ; this.gn = gn ; }
         
         @Override public void triple(Triple triple)
-        { sink.quad(new Quad(gn, triple)) ; }
+        { other.quad(new Quad(gn, triple)) ; }
     }
 
     private static class ParserOutputSinkTriples extends StreamRDFBase

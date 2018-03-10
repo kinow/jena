@@ -30,6 +30,8 @@ import org.apache.jena.sparql.graph.NodeTransform;
 
 public interface Expr
 {
+    public static final Expr NONE = ExprNone.NONE0 ;
+    
     public static final int CMP_GREATER  =  DatatypeConstants.GREATER ;
     public static final int CMP_EQUAL    =  DatatypeConstants.EQUAL ;
     public static final int CMP_LESS     =  DatatypeConstants.LESSER ;
@@ -46,12 +48,21 @@ public interface Expr
      */ 
     public boolean isSatisfied(Binding binding, FunctionEnv execCxt) ;
   
-    /** Variables used by this expression - excludes variables scoped to (NOT)EXISTS */
+    /**
+     * Variables used by this expression.
+     * @see ExprVars#getVarNamesMentioned
+     * @see ExprVars#getNonOpVarNamesMentioned
+     */
     public Set<Var>  getVarsMentioned() ;
-    /** Variables used by this expression - excludes variables scoped to (NOT)EXISTS */
+    /** 
+     * Variables used by this expression.
+     * @deprecated Use {@link ExprVars#varNamesMentioned} or {@link ExprVars#varNamesMentioned}
+     */
+    @Deprecated
     public void varsMentioned(Collection<Var> acc) ;
     
-    /** Evaluate this expression against the binding
+    /** 
+     * Evaluate this expression against the binding
      * @param binding 
      * @param env
      */
@@ -68,7 +79,7 @@ public interface Expr
     /** Deep copy */
     public Expr deepCopy() ;
     
-    /** Answer whether this is a variable (in which case getVarName and getNodeVar can be called) */ 
+    /** Answer whether this is a variable. */ 
     public boolean isVariable() ;
     /** Variable name (returns null if not a variable) */
     public String  getVarName() ;

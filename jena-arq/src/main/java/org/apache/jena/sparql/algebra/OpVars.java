@@ -23,11 +23,14 @@ import static org.apache.jena.sparql.core.Vars.addVar ;
 import java.util.* ;
 
 import org.apache.jena.atlas.lib.SetUtils ;
-import org.apache.jena.atlas.lib.Tuple ;
+import org.apache.jena.atlas.lib.tuple.Tuple ;
+import org.apache.jena.atlas.lib.tuple.TupleFactory ;
 import org.apache.jena.graph.Node ;
 import org.apache.jena.graph.Triple ;
-import org.apache.jena.sparql.algebra.OpWalker.WalkerVisitor ;
+import org.apache.jena.sparql.algebra.OpWalker.OpWalkerVisitor;
+//import org.apache.jena.sparql.algebra.walker.WalkerVisitor ;
 import org.apache.jena.sparql.algebra.op.* ;
+//import org.apache.jena.sparql.algebra.walker.WalkerVisitorVisible;
 import org.apache.jena.sparql.core.BasicPattern ;
 import org.apache.jena.sparql.core.Var ;
 import org.apache.jena.sparql.expr.ExprVars ;
@@ -52,10 +55,11 @@ public class OpVars
 
     public static void visibleVars(Op op, Set<Var> acc) {
         OpVarsPattern visitor = new OpVarsPattern(acc, true) ;
-        OpWalker.walk(new WalkerVisitorVisible(visitor, acc), op) ;
+        // Does not work yet for new walker.
+        OpWalker.walk(new OpWalkerVisitorVisible(visitor, acc), op) ;
     }
     
-    /** The set of variables that wil be in every solution of this Op */
+    /** The set of variables that will be in every solution of this Op */
     public static Set<Var> fixedVars(Op op) {
         Set<Var> acc = collector() ;
         fixedVars(op, acc) ;
@@ -64,10 +68,10 @@ public class OpVars
 
     public static void fixedVars(Op op, Set<Var> acc) {
         OpVarsPattern visitor = new OpVarsPattern(acc, true) ;
-        OpWalker.walk(new WalkerVisitorFixed(visitor, acc), op) ;
+        // Does not work yet for new walker.
+        OpWalker.walk(new OpWalkerVisitorFixed(visitor, acc), op) ;
     }
     
-    @SuppressWarnings("unchecked")
     public static Tuple<Set<Var>> mentionedVarsByPosition(Op op) {
         Set<Var> graphAcc = collector() ;
         Set<Var> subjAcc = collector() ;
@@ -76,10 +80,9 @@ public class OpVars
         Set<Var> unknownAcc = collector() ;
         OpVarsPatternWithPositions visitor = new OpVarsPatternWithPositions(graphAcc, subjAcc, predAcc, objAcc, unknownAcc, false);
         OpWalker.walk(op, visitor);
-        return Tuple.createTuple(graphAcc, subjAcc, predAcc, objAcc, unknownAcc);
+        return TupleFactory.tuple(graphAcc, subjAcc, predAcc, objAcc, unknownAcc);
     }
     
-    @SuppressWarnings("unchecked")
     public static Tuple<Set<Var>> mentionedVarsByPosition(Op... ops) {
         Set<Var> graphAcc = collector() ;
         Set<Var> subjAcc = collector() ;
@@ -89,7 +92,7 @@ public class OpVars
         OpVarsPatternWithPositions visitor = new OpVarsPatternWithPositions(graphAcc, subjAcc, predAcc, objAcc, unknownAcc, false);
         for (Op op : ops)
             OpWalker.walk(op, visitor);
-        return Tuple.createTuple(graphAcc, subjAcc, predAcc, objAcc, unknownAcc);
+        return TupleFactory.tuple(graphAcc, subjAcc, predAcc, objAcc, unknownAcc);
     }
 
     // All mentioned variables regardless of scope/visibility.
@@ -106,11 +109,11 @@ public class OpVars
     }
 
     /** Do project and don't walk into it. MINUS vars aren't visible either */
-    private static class WalkerVisitorVisible extends WalkerVisitor 
+    private static class OpWalkerVisitorVisible extends OpWalkerVisitor 
     {
         private final Collection<Var> acc ;
 
-        public WalkerVisitorVisible(OpVarsPattern visitor, Collection<Var> acc) {
+        public OpWalkerVisitorVisible(OpVarsPattern visitor, Collection<Var> acc) {
             super(visitor) ;
             this.acc = acc ;
         }
@@ -138,12 +141,13 @@ public class OpVars
 
     // Only consider variables that are visible and definitely defined.
     // OPTIONAL (2 forms) and UNION are the interesting cases.
-    private static class WalkerVisitorFixed extends WalkerVisitor
+    private static class OpWalkerVisitorFixed extends OpWalkerVisitor
     {
         private final Collection<Var> acc ;
 
-        public WalkerVisitorFixed(OpVarsPattern visitor, Collection<Var> acc) {
-            super(visitor) ;
+        public OpWalkerVisitorFixed(OpVarsPattern visitor, Collection<Var> acc) {
+            //super(visitor, null, null, null) ;
+            super(visitor);
             this.acc = acc ;
         }
         
@@ -180,6 +184,8 @@ public class OpVars
                 op.getLeft().visit(this) ;
             // Skip right.
             // if ( op.getRight() != null ) op.getRight().visit(this) ;
+//            if (opVisitor != null)
+//                op.visit(opVisitor) ;
             if (visitor != null)
                 op.visit(visitor) ;
             after(op) ;
@@ -266,7 +272,7 @@ public class OpVars
 
         @Override
         public void visit(OpProcedure opProc) {
-            opProc.getArgs().varsMentioned(acc) ;
+            ExprVars.varsMentioned(acc, opProc.getArgs()) ;
         }
 
     }
@@ -407,7 +413,7 @@ public class OpVars
 
         @Override
         public void visit(OpFilter opFilter) {
-            opFilter.getExprs().varsMentioned(acc) ;
+            ExprVars.varsMentioned(acc, opFilter.getExprs()) ;
         }
 
         @Override

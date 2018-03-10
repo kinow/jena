@@ -48,7 +48,6 @@ public class TextIndexLuceneAssembler extends AssemblerBase {
         .
     */
     
-    @SuppressWarnings("resource")
     @Override
     public TextIndex open(Assembler a, Resource root, Mode mode) {
         try {
@@ -64,13 +63,13 @@ public class TextIndexLuceneAssembler extends AssemblerBase {
                     directory = new RAMDirectory() ;
                 } else {
                     File dir = new File(literalValue) ;
-                    directory = FSDirectory.open(dir) ;
+                    directory = FSDirectory.open(dir.toPath()) ;
                 }
             } else {
                 Resource x = n.asResource() ;
                 String path = IRILib.IRIToFilename(x.getURI()) ;
                 File dir = new File(path) ;
-                directory = FSDirectory.open(dir) ;
+                directory = FSDirectory.open(dir.toPath()) ;
             }
 
             Analyzer analyzer = null;
@@ -93,6 +92,17 @@ public class TextIndexLuceneAssembler extends AssemblerBase {
                 }
                 Resource analyzerResource = (Resource) qaNode;
                 queryAnalyzer = (Analyzer) a.open(analyzerResource);
+            }
+            
+            String queryParser = null;
+            Statement queryParserStatement = root.getProperty(pQueryParser);
+            if (null != queryParserStatement) {
+                RDFNode qpNode = queryParserStatement.getObject();
+                if (! qpNode.isResource()) {
+                    throw new TextIndexException("Text query parser property is not a resource : " + qpNode);
+                }
+                Resource parserResource = (Resource) qpNode;
+                queryParser = parserResource.getLocalName();
             }
 
             boolean isMultilingualSupport = false;
@@ -120,6 +130,7 @@ public class TextIndexLuceneAssembler extends AssemblerBase {
             TextIndexConfig config = new TextIndexConfig(docDef);
             config.setAnalyzer(analyzer);
             config.setQueryAnalyzer(queryAnalyzer);
+            config.setQueryParser(queryParser);
             config.setMultilingualSupport(isMultilingualSupport);
             config.setValueStored(storeValues);
 

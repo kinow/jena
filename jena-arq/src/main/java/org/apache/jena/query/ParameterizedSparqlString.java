@@ -1458,6 +1458,11 @@ public class ParameterizedSparqlString implements PrefixMapping {
     }
 
     @Override
+    public PrefixMapping clearNsPrefixMap() {
+        return this.prefixes.clearNsPrefixMap() ;
+    }
+    
+    @Override
     public PrefixMapping setNsPrefixes(PrefixMapping other) {
         return this.prefixes.setNsPrefixes(other);
     }
@@ -1502,6 +1507,16 @@ public class ParameterizedSparqlString implements PrefixMapping {
         return this.prefixes.qnameFor(uri);
     }
 
+    @Override
+    public boolean hasNoMappings() {
+        return this.prefixes.hasNoMappings();
+    }
+    
+    @Override
+    public int numPrefixes() {
+        return this.prefixes.numPrefixes();
+    }    
+    
     @Override
     public PrefixMapping lock() {
         return this.prefixes.lock();

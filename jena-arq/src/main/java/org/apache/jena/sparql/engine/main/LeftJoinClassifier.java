@@ -47,12 +47,11 @@ public class LeftJoinClassifier
     // Need also worry about filters in the right (not in the LJ condition)
     // which use vars from the left. 
 
-    static public boolean isLinear(OpLeftJoin op)
-    {
+    static public boolean isLinear(OpLeftJoin op) {
         return isLinear(op.getLeft(), op.getRight()) ;
     }
-    static public boolean isLinear(Op left, Op right)
-    {
+
+    static public boolean isLinear(Op left, Op right) {
         left = effectiveOp(left) ;
         right = effectiveOp(right) ;
         
@@ -62,47 +61,71 @@ public class LeftJoinClassifier
             return false ;
         
         Set<Var> leftVars = OpVars.visibleVars(left) ;
-        VarFinder vf = new VarFinder(right) ;
+        if ( print ) {
+            System.err.println("Left") ;
+            System.err.println("  Visible: "+leftVars) ;
+        }
+        if ( print ) {
+            VarFinder vfLeft = VarFinder.process(left) ;
+            System.err.println("Left") ;
+            vfLeft.print(System.err) ;
+//        // Check
+//        Set<Var> leftVars2 = new HashSet<>();
+//        leftVars.addAll(vfLeft.getFixed());
+//        leftVars.addAll(vfLeft.getOpt());
+//        leftVars.addAll(vfLeft.getAssign());
+//        if ( print ) {
+//            System.err.println("  Visible: "+leftVars);
+//        }
+        }
+
+        VarFinder vf = VarFinder.process(right) ;
+        if ( print ) {
+            System.err.println("Right") ;
+            vf.print(System.err) ;
+        }
         
+        // Case 1 : If there are any variables in the LHS that are
+        // filter-only or filter-before define, we can't do anything.
+        if ( ! vf.getFilterOnly().isEmpty() ) {
+            // A tigher condition is to see of any of the getFilterOnly are possible from the
+            // left.  If not, then we can still use a sequence. 
+            // But an outer sequence may push arbitrary here so play safe on the argument
+            // this is a relative uncommon case.
+            if (print) System.err.println("Case 1 - " + false);
+            return false ;
+        }
+        
+        if (print) System.err.println("Case 1 - " + true);
         Set<Var> optRight = vf.getOpt() ;
         Set<Var> fixedRight = vf.getFixed() ;
         Set<Var> filterVarsRight = vf.getFilter() ; 
         Set<Var> assignVarsRight = vf.getAssign() ;
-        
-        if (print) {
-            System.err.println("Left/visible: " + leftVars) ;
-            System.err.println("Right/fixed:  " + fixedRight) ;
-            System.err.println("Right/opt:    " + optRight) ;
-            System.err.println("Right/filter: " + filterVarsRight) ;
-            System.err.println("Right/assign: " + assignVarsRight) ;
-        }
-        
-        // Case 1
+        // Case 2
         // A variable is nested in an optional on the RHS and on the LHS
         // Cannot linearize as we must preserve scope
-        boolean b1 = SetUtils.intersectionP(leftVars, optRight) ;
-        if (print) System.err.println("Case 1 - " + b1);
-        
-        // Case 2
-        // A variable mentioned in a filter within the RHS already exists on the LHS
-        // Cannot linearize as would change filter evaluation
-        boolean b2 = SetUtils.intersectionP(leftVars, filterVarsRight) ;
+        boolean b2 = SetUtils.intersectionP(leftVars, optRight) ;
         if (print) System.err.println("Case 2 - " + b2);
         
         // Case 3
+        // A variable mentioned in a filter within the RHS already exists on the LHS
+        // Cannot linearize as would change filter evaluation
+        boolean b3 = SetUtils.intersectionP(leftVars, filterVarsRight) ;
+        if (print) System.err.println("Case 3 - " + b3);
+        
+        // Case 4
         // A variable mentioned in the assign is not introduced on the RHS
         // Cannot linearize as would change bind evaluation
         Set<Var> unsafeAssign = new HashSet<>(assignVarsRight);
         unsafeAssign.removeAll(fixedRight);
-        boolean b3 = unsafeAssign.size() > 0 ;
-        if (print) System.err.println("Case 3 - " + b3);
+        boolean b4 = unsafeAssign.size() > 0 ;
+        if (print) System.err.println("Case 4 - " + b4);
 
         // Linear if all conditions are false
-        return ! b1 && ! b2 && ! b3 ;
+        return ! b2 && ! b3 && ! b4 ;
     }
     
-    static public Set<Var> nonLinearVars(OpLeftJoin op)
-    {
+    static public Set<Var> nonLinearVars(OpLeftJoin op) { 
         Op left = effectiveOp(op.getLeft()) ;
         Op right = effectiveOp(op.getRight()) ;
         Set<Var> leftVars = OpVars.visibleVars(left) ;
@@ -111,11 +134,9 @@ public class LeftJoinClassifier
         return SetUtils.intersection(leftVars, optRight) ;
     }
     
-    private static Op effectiveOp(Op op)
-    {
+    private static Op effectiveOp(Op op) {
         if (op instanceof OpExt)
             op = ((OpExt) op).effectiveOp() ;
         return op ;
     }
-
 }

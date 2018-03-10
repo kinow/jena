@@ -23,14 +23,14 @@ import java.util.Iterator ;
 import org.apache.jena.atlas.lib.Sync ;
 import org.apache.jena.graph.Graph ;
 import org.apache.jena.graph.Node ;
+import org.apache.jena.query.ReadWrite ;
 import org.apache.jena.shared.Lock ;
 import org.apache.jena.sparql.SystemARQ ;
 import org.apache.jena.sparql.util.Context ;
 
 public class DatasetGraphWrapper implements DatasetGraph, Sync 
 {
-    // Associated query engine factory - QueryEngineFactoryWrapper
-    // which executes on the unwraped DSG. 
+    // The wrapped DatasetGraph but all calls go via get() so this can be null.
     private final DatasetGraph dsg ;
     
     /** Return the DatasetGraph being wrapped. */
@@ -57,113 +57,155 @@ public class DatasetGraphWrapper implements DatasetGraph, Sync
      */
     protected DatasetGraph get() { return dsg ; }
 
+    /** For operations that only read the DatasetGraph. */ 
+    protected DatasetGraph getR() { return get() ; }
+    
+    /** For operations that write the DatasetGraph. */ 
+    protected DatasetGraph getW() { return get() ; }
+    
+    /** For operations that get a handle on a graph. */
+    protected DatasetGraph getG() { return get() ; }
+    
+    /** For operations that pass on transaction actions. */
+    protected DatasetGraph getT() { return get() ; }
+
     public DatasetGraphWrapper(DatasetGraph dsg) {
         this.dsg = dsg ;
     }
 
     @Override
     public boolean containsGraph(Node graphNode)
-    { return get().containsGraph(graphNode) ; }
+    { return getR().containsGraph(graphNode) ; }
 
     @Override
     public Graph getDefaultGraph()
-    { return get().getDefaultGraph(); }
+    { return getG().getDefaultGraph(); }
 
     @Override
     public Graph getGraph(Node graphNode)
-    { return get().getGraph(graphNode) ; }
+    { return getG().getGraph(graphNode) ; }
 
     @Override
     public void addGraph(Node graphName, Graph graph)
-    { get().addGraph(graphName, graph) ; }
+    { getW().addGraph(graphName, graph) ; }
 
     @Override
     public void removeGraph(Node graphName)
-    { get().removeGraph(graphName) ; }
+    { getW().removeGraph(graphName) ; }
 
     @Override
     public void setDefaultGraph(Graph g)
-    { get().setDefaultGraph(g) ; }
+    { getW().setDefaultGraph(g) ; }
 
     @Override
     public Lock getLock()
-    { return get().getLock() ; }
+    { return getR().getLock() ; }
 
     @Override
     public Iterator<Node> listGraphNodes()
-    { return get().listGraphNodes() ; }
+    { return getR().listGraphNodes() ; }
 
     @Override
     public void add(Quad quad)
-    { get().add(quad) ; }
+    { getW().add(quad) ; }
 
     @Override
     public void delete(Quad quad)
-    { get().delete(quad) ; }
+    { getW().delete(quad) ; }
 
     @Override
     public void add(Node g, Node s, Node p, Node o)
-    { get().add(g, s, p, o) ; }
+    { getW().add(g, s, p, o) ; }
 
     @Override
     public void delete(Node g, Node s, Node p, Node o)
-    { get().delete(g, s, p, o) ; }
+    { getW().delete(g, s, p, o) ; }
     
     @Override
     public void deleteAny(Node g, Node s, Node p, Node o)
-    { get().deleteAny(g, s, p, o) ; }
+    { getW().deleteAny(g, s, p, o) ; }
 
     @Override
     public void clear()
-    { get().clear() ; }
+    { getW().clear() ; }
     
     @Override
     public boolean isEmpty()
-    { return get().isEmpty() ; }
+    { return getR().isEmpty() ; }
     
     @Override
     public Iterator<Quad> find()
-    { return get().find() ; }
+    { return getR().find() ; }
 
     @Override
     public Iterator<Quad> find(Quad quad)
-    { return get().find(quad) ; }
+    { return getR().find(quad) ; }
 
     @Override
     public Iterator<Quad> find(Node g, Node s, Node p, Node o)
-    { return get().find(g, s, p, o) ; }
+    { return getR().find(g, s, p, o) ; }
 
     @Override
     public Iterator<Quad> findNG(Node g, Node s, Node p, Node o)
-    { return get().findNG(g, s, p, o) ; }
+    { return getR().findNG(g, s, p, o) ; }
 
     @Override
     public boolean contains(Quad quad)
-    { return get().contains(quad) ; }
+    { return getR().contains(quad) ; }
 
     @Override
     public boolean contains(Node g, Node s, Node p, Node o)
-    { return get().contains(g, s, p, o) ; }
+    { return getR().contains(g, s, p, o) ; }
 
     @Override
     public Context getContext()
-    { return get().getContext() ; }
+    { return getR().getContext() ; }
 
     @Override
     public long size()
-    { return get().size() ; }
+    { return getR().size() ; }
 
     @Override
     public void close()
-    { get().close() ; }
+    { getW().close() ; }
     
     @Override
-    public String toString() { return get().toString() ; }
+    public String toString() { return getR().toString() ; }
 
     @Override
     public void sync() {
         // Pass down sync.
-        SystemARQ.sync(get()) ; 
+        SystemARQ.sync(getW()) ; 
+    }
+
+    @Override
+    public void begin(ReadWrite readWrite) 
+    { getT().begin(readWrite) ; }
+
+    @Override
+    public void commit() 
+    { getT().commit() ; }
+
+    @Override
+    public void abort() 
+    { getT().abort() ; }
+
+    @Override
+    public void end()
+    { getT().end() ; }
+
+    @Override
+    public boolean isInTransaction() 
+    { return get().isInTransaction() ; }    
+
+    @Override
+    public boolean supportsTransactions() {
+        return getT().supportsTransactions() ;
+    }
+
+    @Override
+    public boolean supportsTransactionAbort() {
+        return getT().supportsTransactionAbort() ;
     }
     
 }

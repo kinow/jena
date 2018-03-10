@@ -18,6 +18,7 @@
 
 package org.apache.jena.sparql.util;
 
+import java.util.HashMap;
 import java.util.Map ;
 
 import org.apache.jena.shared.PrefixMapping ;
@@ -65,6 +66,13 @@ public class PrefixMapping2 implements PrefixMapping
         pmapLocal.removeNsPrefix(prefix) ;
         if ( pmapGlobal != null && pmapGlobal.getNsPrefixURI(prefix) != null )
             throw new UnsupportedOperationException("PrefixMapping2: prefix '"+prefix+"' in the immutable map") ;
+        return this ;
+    }
+
+    /** Clear the local prefix map, but leave the immutable global one alone */
+    @Override
+    public PrefixMapping clearNsPrefixMap() {
+        getLocalPrefixMapping().clearNsPrefixMap() ;
         return this ;
     }
 
@@ -173,6 +181,22 @@ public class PrefixMapping2 implements PrefixMapping
         return null ;
     }
 
+    @Override
+    public boolean hasNoMappings() {
+        return pmapLocal.hasNoMappings() && pmapGlobal.hasNoMappings();
+    }
+    
+    @Override
+    public int numPrefixes() {
+        // Expensive but gets the right answer.
+        Map<String, String> x = new HashMap<>() ;
+        x.putAll(pmapLocal.getNsPrefixMap()) ;
+        x.putAll(pmapGlobal.getNsPrefixMap()) ;
+        return x.size() ;
+    }    
+    
+
+    
     /** @see org.apache.jena.shared.PrefixMapping#lock() */
     @Override
     public PrefixMapping lock()

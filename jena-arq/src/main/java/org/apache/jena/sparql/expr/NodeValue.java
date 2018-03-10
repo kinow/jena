@@ -128,6 +128,7 @@ public abstract class NodeValue extends ExprNode
     
     public static final NodeValue nvZERO = NodeValue.makeNode(NodeConst.nodeZero) ;
     public static final NodeValue nvONE  = NodeValue.makeNode(NodeConst.nodeOne) ;
+    public static final NodeValue nvTEN  = NodeValue.makeNode(NodeConst.nodeTen) ;
     
     public static final NodeValue nvNaN     = NodeValue.makeNode("NaN", XSDdouble) ;
     public static final NodeValue nvINF     = NodeValue.makeNode("INF", XSDdouble) ;
@@ -137,7 +138,9 @@ public abstract class NodeValue extends ExprNode
     
     // Use "==" for equality.
     private static final String strForUnNode = "node value nothing" ;
-    public static final NodeValue nvNothing = NodeValue.makeNode(NodeFactory.createBlankNode("node value nothing")) ;
+    /** @deprecated Use Expr.NONE */
+    @Deprecated
+    public static final NodeValue nvNothing = NodeValue.makeNode(NodeFactory.createBlankNode(strForUnNode)) ;
     
     public static final String xsdNamespace = XSD+"#" ; 
     
@@ -159,16 +162,12 @@ public abstract class NodeValue extends ExprNode
      */
     private static DatatypeFactory getDatatypeFactory() 
             throws DatatypeConfigurationException {
-        ClassLoader cl = NodeValue.class.getClassLoader();
-        File jaxpPropFile = new File(
-            System.getProperty("java.home") + File.pathSeparator + 
-            "lib" + File.pathSeparator + 
-            "jaxp.properties");
-        
         // Step 1. Try the system property
         String dtfClass = System.getProperty(DatatypeFactory.DATATYPEFACTORY_PROPERTY);
         
         try {
+            File jaxpPropFile = new File(System.getProperty("java.home") + 
+                                         File.separator + "lib" + File.separator + "jaxp.properties");
             // Step 2. Otherwise, try property in jaxp.properties
             if (dtfClass == null && jaxpPropFile.exists() && jaxpPropFile.canRead()) {
                 Properties jaxp = new Properties();
@@ -186,15 +185,22 @@ public abstract class NodeValue extends ExprNode
         }
         
         // Step 3. Otherwise try the service approach
+        // This is the normal initialization path, getting it from the Apach Xerces dependency
+        // and loading org.apache.xerces.jaxp.datatype.DatatypeFactoryImpl
         if (dtfClass == null) {
+            ClassLoader cl = NodeValue.class.getClassLoader();
             Iterator<DatatypeFactory> factoryIterator = 
                 ServiceLoader.load(DatatypeFactory.class, cl).iterator();
             if (factoryIterator.hasNext()) return factoryIterator.next();
         }
         
-        // Step 4. Use the default
-        if (dtfClass == null) dtfClass = DatatypeFactory.DATATYPEFACTORY_IMPLEMENTATION_CLASS;
-        
+        // Step 4. Use the default.
+        // Note: When Apache Xerces is on the classpath for Jena, javax.xml.datatype.DatatypeFactory is from that jar and
+        //  DATATYPEFACTORY_IMPLEMENTATION_CLASS is "org.apache.xerces.jaxp.datatype.DatatypeFactoryImpl"
+        // Without an explicit Xerces, we would get "com.sun.org.apache.xerces.internal.jaxp.datatype.DatatypeFactoryImpl"
+        // from the JDK rt.jar version of javax.xml.datatype.DatatypeFactory.
+        if (dtfClass == null) 
+            dtfClass = DatatypeFactory.DATATYPEFACTORY_IMPLEMENTATION_CLASS;
         return DatatypeFactory.newInstance(dtfClass, NodeValue.class.getClassLoader()) ;
     }
     
@@ -1051,7 +1057,9 @@ public abstract class NodeValue extends ExprNode
                 // XSD integer and derived types 
                 if ( XSDinteger.isValidLiteral(lit) )
                 {
-                    String s = node.getLiteralLexicalForm() ;
+                    // .trim() implements the facet of whitespace collapse.
+                    // BigInteger does not accept such whitespace. 
+                    String s = node.getLiteralLexicalForm().trim() ;
                     if ( s.startsWith("+") )
                         // BigInteger does not accept leading "+"
                         s = s.substring(1) ;

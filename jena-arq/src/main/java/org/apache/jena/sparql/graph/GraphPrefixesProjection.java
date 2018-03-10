@@ -21,7 +21,6 @@ package org.apache.jena.sparql.graph;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.jena.shared.PrefixMapping ;
 import org.apache.jena.shared.impl.PrefixMappingImpl ;
 import org.apache.jena.sparql.core.DatasetPrefixStorage ;
 
@@ -29,7 +28,11 @@ import org.apache.jena.sparql.core.DatasetPrefixStorage ;
 
 public class GraphPrefixesProjection extends PrefixMappingImpl
 {
-    // Own cache and completely replace PrefixMappingImpl?
+    // super.PrefixMappingImpl is the in-memory copy of the prefixes.
+    // It is a complete copy, rather than a cache.
+    // See JENA-81.
+    
+    // Maybe we should have own cache and completely replace using storage from PrefixMappingImpl?
 
     private String graphName ;
     private DatasetPrefixStorage prefixes ; 
@@ -38,6 +41,9 @@ public class GraphPrefixesProjection extends PrefixMappingImpl
     { 
         this.graphName = graphName ;
         this.prefixes = prefixes ;
+        // Force into in-memory copy.
+        // See JENA-81
+        getNsPrefixMap() ;
     }
 
     //@Override protected void regenerateReverseMapping() {}
@@ -65,7 +71,6 @@ public class GraphPrefixesProjection extends PrefixMappingImpl
             super.set(e.getKey(), e.getValue()) ;
         return m ;
     }
-
 
     @Override
     protected void set(String prefix, String uri)
@@ -100,12 +105,11 @@ public class GraphPrefixesProjection extends PrefixMappingImpl
     }
 
     @Override
-    public PrefixMapping removeNsPrefix(String prefix)
-    {
+    protected void remove(String prefix) {
         String uri = super.getNsPrefixURI(prefix) ;
-        if ( uri != null )
+        if ( uri != null ) {
             prefixes.removeFromPrefixMap(graphName, prefix) ;
-        super.removeNsPrefix(prefix) ;
-        return this ; 
+            super.remove(prefix);
+        }
     }
 }

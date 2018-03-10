@@ -22,7 +22,6 @@ import static org.apache.jena.riot.RDFLanguages.filenameToLang;
 import static org.apache.jena.riot.RDFParserRegistry.isRegistered;
 
 import java.io.File ;
-import java.io.FilenameFilter ;
 import java.io.IOException ;
 import java.lang.reflect.Method ;
 import java.nio.file.DirectoryStream ;
@@ -40,21 +39,14 @@ import org.apache.jena.atlas.lib.StrUtils ;
 import org.apache.jena.fuseki.Fuseki ;
 import org.apache.jena.fuseki.FusekiConfigException ;
 import org.apache.jena.fuseki.FusekiLib ;
-import org.apache.jena.fuseki.server.DataAccessPoint ;
-import org.apache.jena.fuseki.server.DatasetStatus ;
-import org.apache.jena.fuseki.server.FusekiVocab ;
-import org.apache.jena.fuseki.server.SystemState ;
+import org.apache.jena.fuseki.server.* ;
 import org.apache.jena.query.Dataset ;
 import org.apache.jena.query.QuerySolution ;
 import org.apache.jena.query.ReadWrite ;
 import org.apache.jena.query.ResultSet ;
 import org.apache.jena.rdf.model.* ;
 import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.RDFDataMgr ;
 import org.apache.jena.sparql.core.assembler.AssemblerUtils ;
-import org.apache.jena.update.UpdateAction ;
-import org.apache.jena.update.UpdateFactory ;
-import org.apache.jena.update.UpdateRequest ;
 import org.apache.jena.vocabulary.RDF ;
 import org.slf4j.Logger ;
 
@@ -63,24 +55,12 @@ public class FusekiConfig {
     
     private static Logger log = Fuseki.configLog ;
     
-    private static FilenameFilter visibleFiles = 
-        new FilenameFilter() {
-        @Override
-        public boolean accept(File dir, String name) {
-            if ( name.startsWith(".") )
-                return false ;
-            File f = new File(dir, name) ;
-            return f.isFile() ;
-        }
-    } ;
-    
     /** Has side effects in server setup */
-    public static List<DataAccessPoint> readConfigFile(String filename) {
+    public static List<DataAccessPoint> readServerConfigFile(String filename) {
         // Old-style config file.
-        Model model = RDFDataMgr.loadModel(filename) ;
+        Model model = readAssemblerFile(filename) ;
         if ( model.size() == 0 )
             return Collections.emptyList() ;
-        additionalRDF(model) ;
         server(model) ;
         return servicesAndDatasets(model) ;
     }
@@ -128,13 +108,9 @@ public class FusekiConfig {
     
     private static List<DataAccessPoint> servicesAndDatasets(Model model) {
         // Old style configuration file : server to services.
+        DatasetDescriptionRegistry dsDescMap = FusekiServer.registryForBuild() ;
         // ---- Services
         ResultSet rs = FusekiLib.query("SELECT * { ?s fu:services [ list:member ?service ] }", model) ;
-        // If the old config.ttl file becomes just the server configuration file,
-        // then don't warn here.
-//        if ( !rs.hasNext() )
-//            log.warn("No services found") ;
-
         List<DataAccessPoint> accessPoints = new ArrayList<>() ;
 
         if ( ! rs.hasNext() )
@@ -145,7 +121,7 @@ public class FusekiConfig {
         for ( ; rs.hasNext() ; ) {
             QuerySolution soln = rs.next() ;
             Resource svc = soln.getResource("service") ;
-            DataAccessPoint acc = Builder.buildDataAccessPoint(svc) ;
+            DataAccessPoint acc = FusekiBuilder.buildDataAccessPoint(svc, dsDescMap) ;
             accessPoints.add(acc) ;
         }
         
@@ -167,31 +143,10 @@ public class FusekiConfig {
         }
     }
     
-    // XXX Move to utils
-    private static Model additionalRDF(Model m) {
-        SystemState.init$();        // Why? mvn jetty:run-war
-        String x1 = StrUtils.strjoinNL
-            ( SystemState.PREFIXES, 
-              "INSERT                    { [] ja:loadClass 'org.apache.jena.tdb.TDB' }",
-              "WHERE { FILTER NOT EXISTS { [] ja:loadClass 'org.apache.jena.tdb.TDB' } }"
-             ) ;
-        String x2 = StrUtils.strjoinNL
-            (SystemState.PREFIXES,
-             "INSERT DATA {",
-             "   tdb:DatasetTDB  rdfs:subClassOf  ja:RDFDataset .",
-             "   tdb:GraphTDB    rdfs:subClassOf  ja:Model .",
-             "}" 
-             ) ;
-        execute(m, x1) ;
-        execute(m, x2) ;
-        return m ;
+    private static Model readAssemblerFile(String filename) {
+        return AssemblerUtils.readAssemblerFile(filename) ;
     }
-
-    private static void execute(Model m, String x) {
-        UpdateRequest req = UpdateFactory.create(x) ;
-        UpdateAction.execute(req, m);
-    }
-
+    
     // XXX Move to a library
     private static List<Resource> getByType(Resource type, Model m) {
         ResIterator rIter = m.listSubjectsWithProperty(RDF.type, type) ;
@@ -222,11 +177,11 @@ public class FusekiConfig {
         List<DataAccessPoint> dataServiceRef = new ArrayList<>() ;
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(pDir, filter)) {
             for ( Path p : stream ) {
+                DatasetDescriptionRegistry dsDescMap = FusekiServer.registryForBuild() ;
                 String fn = IRILib.filenameToIRI(p.toString()) ;
                 log.info("Load configuration: "+fn);
-                Model m = RDFDataMgr.loadModel(fn) ;
-                DataAccessPoint acc = readConfiguration(m) ; 
-                dataServiceRef.add(acc) ;
+                Model m = readAssemblerFile(fn) ;
+                readConfiguration(m, dsDescMap, dataServiceRef) ; 
             }
         } catch (IOException ex) {
             log.warn("IOException:"+ex.getMessage(), ex);
@@ -234,8 +189,20 @@ public class FusekiConfig {
         return dataServiceRef ;
     }
 
-    private static DataAccessPoint readConfiguration(Model m) {
-        additionalRDF(m) ;
+    /** Read and process one file */ 
+    public static  List<DataAccessPoint> readConfigurationFile(String fn) {
+        List<DataAccessPoint> acc = new ArrayList<>() ;
+        Model m = readAssemblerFile(fn) ;
+        DatasetDescriptionRegistry dsDescMap = new DatasetDescriptionRegistry() ;
+        readConfiguration(m, dsDescMap, acc) ;
+        return acc ;
+    }
+    
+    /** Read a configuration in a model.
+     * Allow dataset descriptions to be carried over from anothe rplace.
+     * Add to a list. 
+     */
+    private static void readConfiguration(Model m, DatasetDescriptionRegistry dsDescMap, List<DataAccessPoint> dataServiceRef) {
         List<Resource> services = getByType(FusekiVocab.fusekiService, m) ; 
 
         if ( services.size() == 0 ) {
@@ -243,21 +210,16 @@ public class FusekiConfig {
             throw new FusekiConfigException() ;
         }
 
-        // Remove?
-        if ( services.size() > 1 ) {
-            log.error("Multiple services found") ;
-            throw new FusekiConfigException() ;
+        for ( Resource service : services ) {
+            DataAccessPoint acc = FusekiBuilder.buildDataAccessPoint(service, dsDescMap) ; 
+            dataServiceRef.add(acc) ;
         }
-
-        Resource service = services.get(0) ;
-        // Configuration file determines read-only status.
-        DataAccessPoint acc = Builder.buildDataAccessPoint(service) ; 
-        return acc ;
     }
 
     // ---- System database
     /** Read the system database */
     public static List<DataAccessPoint> readSystemDatabase(Dataset ds) {
+        DatasetDescriptionRegistry dsDescMap = FusekiServer.registryForBuild() ;
         String qs = StrUtils.strjoinNL
             (SystemState.PREFIXES ,
              "SELECT * {" ,
@@ -286,9 +248,9 @@ public class FusekiConfig {
                 DatasetStatus status = DatasetStatus.status(rStatus) ;
 
                 Model m = ds.getNamedModel(g.getURI()) ;
-                // Rebase the resoure of the service description to the containing graph.
+                // Rebase the resource of the service description to the containing graph.
                 Resource svc = m.wrapAsResource(s.asNode()) ;
-                DataAccessPoint ref = Builder.buildDataAccessPoint(svc) ;
+                DataAccessPoint ref = FusekiBuilder.buildDataAccessPoint(svc, dsDescMap) ;
                 refs.add(ref) ;
             }
             ds.commit(); 

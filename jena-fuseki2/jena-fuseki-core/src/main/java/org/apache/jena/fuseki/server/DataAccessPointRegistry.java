@@ -18,34 +18,51 @@
 
 package org.apache.jena.fuseki.server;
 
+import javax.servlet.ServletContext ;
+
 import org.apache.jena.atlas.lib.Registry ;
+import org.apache.jena.atlas.logging.Log ;
 import org.apache.jena.fuseki.FusekiException ;
 
 public class DataAccessPointRegistry extends Registry<String, DataAccessPoint>
 {
-    public static void register(String name, DataAccessPoint accessPt) {
-        if ( get().isRegistered(name) )
+    public DataAccessPointRegistry() {}
+    
+    // Add error checking.
+    public void register(String name, DataAccessPoint accessPt) {
+        if ( isRegistered(name) )
             throw new FusekiException("Already registered: "+name) ;
-        get().put(name, accessPt);
+        super.put(name, accessPt);
     }
     
     // Debugging
-    public static void print(String string) {
+    public void print(String string) {
         System.out.flush() ;
         if ( string == null )
             string = "DataAccessPointRegistry" ;
-        System.err.println("== "+string) ;
-        DataAccessPointRegistry.get().keys().iterator().forEachRemaining((k) -> {
-            System.err.print("  (key="+k) ;
-            DataAccessPoint ref = DataAccessPointRegistry.get().get(k) ;
-            System.err.print(", ref="+ref.getName()) ;
-            System.err.println(")") ; 
+        System.out.println("== "+string) ;
+        this.forEach((k,ref)->{
+            System.out.printf("  (key=%s, ref=%s)\n", k, ref.getName()) ;
+            ref.getDataService().getOperations().forEach((opName)->{
+                ref.getDataService().getOperation(opName).forEach(ep->{
+                    System.out.printf("     %s : %s\n", opName, ep.getEndpoint()) ;
+                });
+            });
         }) ;
     }
-    
-    private static DataAccessPointRegistry singleton = new DataAccessPointRegistry() ;
 
-    public static DataAccessPointRegistry get() { return singleton ; }
+    // The server DataAccessPointRegistry is held in the ServletContext for the server.
     
-    private DataAccessPointRegistry() {}
+    private static final String attrNameRegistry = "jena-fuseki:dataAccessPointRegistry" ;
+    // Policy for the location of the server-wide DataAccessPointRegistry 
+    public static DataAccessPointRegistry get(ServletContext cxt) {
+        DataAccessPointRegistry registry = (DataAccessPointRegistry)cxt.getAttribute(attrNameRegistry) ;
+        if ( registry == null )
+            Log.warn(DataAccessPointRegistry.class, "No registry for ServletContext") ;
+        return registry ;
+    }
+    
+    public static void set(ServletContext cxt, DataAccessPointRegistry registry) {
+        cxt.setAttribute(attrNameRegistry, registry) ;
+    }
 }

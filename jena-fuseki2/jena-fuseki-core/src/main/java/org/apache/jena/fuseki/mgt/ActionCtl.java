@@ -20,8 +20,6 @@ package org.apache.jena.fuseki.mgt;
 
 import org.apache.jena.fuseki.Fuseki ;
 import org.apache.jena.fuseki.server.DataAccessPoint ;
-import org.apache.jena.fuseki.server.DataAccessPointRegistry ;
-import org.apache.jena.fuseki.server.DataService ;
 import org.apache.jena.fuseki.servlets.ActionBase ;
 import org.apache.jena.fuseki.servlets.HttpAction ;
 import org.apache.jena.fuseki.servlets.ServletOps ;
@@ -37,11 +35,10 @@ public abstract class ActionCtl extends ActionBase
     final
     protected void execCommonWorker(HttpAction action) {
         DataAccessPoint dataAccessPoint ;
-        DataService dSrv ;
         
         String datasetUri = mapRequestToDatasetName(action) ;
         if ( datasetUri != null ) {
-            dataAccessPoint = DataAccessPointRegistry.get().get(datasetUri) ;
+            dataAccessPoint = action.getDataAccessPointRegistry().get(datasetUri) ;
             if ( dataAccessPoint == null ) {
                 ServletOps.errorNotFound("Not found: "+datasetUri) ;
                 return ;
@@ -51,7 +48,6 @@ public abstract class ActionCtl extends ActionBase
             // This is a placeholder when creating new DatasetRefs
             // and also if addressing a container, not a dataset
             dataAccessPoint = null ;
-            dSrv = DataService.serviceOnlyDataService() ;
         }
         
         action.setControlRequest(dataAccessPoint, datasetUri) ;

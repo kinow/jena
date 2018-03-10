@@ -33,14 +33,17 @@ public class DatasetGraphText extends DatasetGraphMonitor implements Transaction
 {
     private static Logger       log = LoggerFactory.getLogger(DatasetGraphText.class) ;
     private final TextIndex     textIndex ;
-    private final Transactional dsgtxn ;
     private final Graph         dftGraph ;
     private final boolean       closeIndexOnClose;
+    // Lock needed for commit/abort that perform an index operation and a dataset operation
+    // which need it happen without a W thread coming in between them.
+    // JENA-1302.
+    private final Object        txnExitLock = new Object();
     
     
     // If we are going to implement Transactional, then we are going to have to do as DatasetGraphWithLock and
     // TDB's DatasetGraphTransaction do and track transaction state in a ThreadLocal
-    private final ThreadLocal<ReadWrite> readWriteMode = new ThreadLocal<ReadWrite>();
+    private final ThreadLocal<ReadWrite> readWriteMode = new ThreadLocal<>();
     
     
     public DatasetGraphText(DatasetGraph dsg, TextIndex index, TextDocProducer producer)
@@ -52,10 +55,6 @@ public class DatasetGraphText extends DatasetGraphMonitor implements Transaction
     {
         super(dsg, producer) ;
         this.textIndex = index ;
-        if ( dsg instanceof Transactional )
-            dsgtxn = (Transactional)dsg ;
-        else
-            dsgtxn = new DatasetGraphWithLock(dsg) ;
         dftGraph = GraphView.createDefaultGraph(this) ;
         this.closeIndexOnClose = closeIndexOnClose;
     }
@@ -94,34 +93,46 @@ public class DatasetGraphText extends DatasetGraphMonitor implements Transaction
 
     /** Search the text index on the text field associated with the predicate */
     public Iterator<TextHit> search(String queryString, Node predicate, int limit) {
+        return search(queryString, predicate, null, null, limit) ;
+    }
+
+    /** Search the text index on the text field associated with the predicate within graph */
+    public Iterator<TextHit> search(String queryString, Node predicate, String graphURI, String lang, int limit) {
         queryString = QueryParserBase.escape(queryString) ;
         if ( predicate != null ) {
             String f = textIndex.getDocDef().getField(predicate) ;
             queryString = f + ":" + queryString ;
         }
-        List<TextHit> results = textIndex.query(predicate, queryString, limit) ;
+        List<TextHit> results = textIndex.query(predicate, queryString, graphURI, lang, limit) ;
         return results.iterator() ;
     }
 
     @Override
     public void begin(ReadWrite readWrite) {
+        // Do not synchronized(txnLock) here. It will deadlock because if there
+        // is an writer in commit, it can't 
+        
+        // The "super.begin" is enough.
         readWriteMode.set(readWrite);
-        dsgtxn.begin(readWrite) ;
+        super.begin(readWrite) ;
         super.getMonitor().start() ;
     }
     
-    /**
-     * Rollback all changes, discarding any exceptions that occur.
-     */
-    @Override
-    public void abort() {
-        // Roll back all both objects, discarding any exceptions that occur
-        try { dsgtxn.abort(); } catch (Throwable t) { log.warn("Exception in abort: " + t.getMessage(), t); }
-        try { textIndex.rollback(); } catch (Throwable t) { log.warn("Exception in abort: " + t.getMessage(), t); }
-        
-        readWriteMode.set(null) ;
-        super.getMonitor().finish() ;
-    }
+    // JENA-1302 :: txnExitLock
+    // We need to 
+    //   textIndex.prepareCommit();
+    //   super.commit();
+    //   textIndex.commit();
+    // without another thread getting in.
+    
+    // Concurrency control most of the time is because we use the transaction
+    // capability of the wrapped dataset but here we need to do an action before
+    // wrapped dataset commit and also an action after.
+    // 
+    // At the point of super.commit, it let in a new writer in begin() which
+    // races to commit before text index commit.
+    //
+    // txnExitLock extends the time of exclusive access.    
     
     /**
      * Perform a 2-phase commit by first calling prepareCommit() on the TextIndex
@@ -137,32 +148,71 @@ public class DatasetGraphText extends DatasetGraphMonitor implements Transaction
      */
     @Override
     public void commit() {
+        if (readWriteMode.get() == ReadWrite.WRITE)
+            commit_W();
+        else
+            commit_R();
+    }
+    
+    
+    private void commit_R() {
+        // No index action needed.
         super.getMonitor().finish() ;
-        // Phase 1
-        if (readWriteMode.get() == ReadWrite.WRITE) {
-            try {
-                textIndex.prepareCommit();
-            }
+        super.commit();
+        readWriteMode.set(null);
+    }
+
+    private void commit_W() {
+        synchronized(txnExitLock) {
+            super.getMonitor().finish() ;
+            // Phase 1
+            try { textIndex.prepareCommit(); }
             catch (Throwable t) {
                 log.error("Exception in prepareCommit: " + t.getMessage(), t) ;
                 abort();
                 throw new TextIndexException(t);
             }
-        }
-        
-        // Phase 2
-        try {
-            dsgtxn.commit();
-            if (readWriteMode.get() == ReadWrite.WRITE) {
+            
+            // Phase 2
+            try {
+                super.commit();
                 textIndex.commit();
             }
+            catch (Throwable t) {
+                log.error("Exception in commit: " + t.getMessage(), t) ;
+                abort();
+                throw new TextIndexException(t);
+            }
+            readWriteMode.set(null);
         }
-        catch (Throwable t) {
-            log.error("Exception in commit: " + t.getMessage(), t) ;
-            abort();
-            throw new TextIndexException(t);
+    }
+
+    /**
+     * Rollback all changes, discarding any exceptions that occur.
+     */
+    @Override
+    public void abort() {
+        if (readWriteMode.get() == ReadWrite.WRITE)
+            abort_W();
+        else
+            abort_R();
+    }
+    
+    private void abort_R() {
+        super.getMonitor().finish() ;
+        try { super.abort() ; }
+        catch (Throwable t) { log.warn("Exception in abort: " + t.getMessage(), t); }
+        readWriteMode.set(null) ;
+    }
+    
+    private void abort_W() {
+        synchronized(txnExitLock) {
+            super.getMonitor().finish() ;
+            // Roll back on both objects, discarding any exceptions that occur
+            try { super.abort(); } catch (Throwable t) { log.warn("Exception in abort: " + t.getMessage(), t); }
+            try { textIndex.rollback(); } catch (Throwable t) { log.warn("Exception in abort: " + t.getMessage(), t); }
+            readWriteMode.set(null) ;
         }
-        readWriteMode.set(null);
     }
 
     @Override
@@ -172,25 +222,31 @@ public class DatasetGraphText extends DatasetGraphMonitor implements Transaction
 
     @Override
     public void end() {
-        // If we are still in a write transaction at this point, then commit was never called, so rollback the TextIndex
+        if ( ! isInTransaction() ) {
+            super.end() ;
+            return;
+        }
         if (readWriteMode.get() == ReadWrite.WRITE) {
-            try {
-                textIndex.rollback();
-            }
-            catch (Throwable t) {
-                log.warn("Exception in end: " + t.getMessage(), t) ;
-            }
+            // If we are still in a write transaction at this point, then commit
+            // was never called, so rollback the TextIndex and the dataset.
+            abort();
         }
-        
-        try {
-            dsgtxn.end() ;
-        }
-        catch (Throwable t) {
-            log.warn("Exception in end: " + t.getMessage(), t) ;
-        }
-        
-        readWriteMode.set(null) ;
+        super.end() ;
         super.getMonitor().finish() ;
+        readWriteMode.set(null) ;
+    }
+    
+    @Override
+    public boolean supportsTransactions() {
+        return super.supportsTransactions() ;
+    }
+    
+    /** Declare whether {@link #abort} is supported.
+     *  This goes along with clearing up after exceptions inside application transaction code.
+     */
+    @Override
+    public boolean supportsTransactionAbort() {
+        return super.supportsTransactionAbort() ;
     }
     
     @Override
@@ -200,5 +256,4 @@ public class DatasetGraphText extends DatasetGraphMonitor implements Transaction
             textIndex.close();
         }
     }
-    
 }

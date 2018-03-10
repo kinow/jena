@@ -36,20 +36,19 @@ import org.junit.runners.Suite ;
     , TestHex.class
     , TestListUtils.class
     , TestSetUtils.class
+    , TestCollectionUtils.class
     , TestCache.class
     , TestCache2.class
-    , TestColumnMap.class
     , TestFileOps.class
     , TestStrUtils.class
     , TestXMLLib.class
     , TestAlarmClock.class
-    , TestRefLong.class
-    , TestReverseComparator.class
     , TestTrie.class
     , TestFilenameProcessing.class
     , TestNumberUtils.class
     , TestDateTimeUtils.class
     , TestCacheSimple.class
+    , TestRefCountingMap.class
 } )
 
 public class TS_Lib

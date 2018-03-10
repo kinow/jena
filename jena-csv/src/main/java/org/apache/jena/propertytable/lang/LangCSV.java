@@ -89,7 +89,7 @@ public class LangCSV implements LangRIOT {
 		sink.start();
 		CSVParser parser = (input != null) ? CSVParser.create(input) : CSVParser.create(reader);
 		List<String> row = null;
-		ArrayList<Node> predicates = new ArrayList<Node>();
+		ArrayList<Node> predicates = new ArrayList<>();
 		int rowNum = 0;
 		while ((row = parser.parse1()) != null) {
 			
@@ -146,7 +146,7 @@ public class LangCSV implements LangRIOT {
 	}
 	
 	public static Node caculateSubject(int rowNum, String filename){
-		Node subject = NodeFactory.createAnon();
+		Node subject = NodeFactory.createBlankNode();
 //		String uri = IRIResolver.resolveString(filename) + "#Row_" + rowNum; 
 //		Node subject =  NodeFactory.createURI(uri);
 		return subject;

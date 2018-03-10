@@ -191,10 +191,9 @@ abstract public class TestLangNTuples extends BaseTest
 
     final protected void parseCheck(String... strings)
     {
-        String string = StrUtils.strjoin("\n", strings) ;
+        String string = String.join("\n", strings) ;
         Tokenizer tokenizer = tokenizer(string) ;
         StreamRDFCounting sink = StreamRDFLib.count() ;
-        @SuppressWarnings("deprecation")
         LangRIOT x = RiotParsers.createParserNQuads(tokenizer, sink) ;
         x.setProfile(RiotLib.profile(null, false, true, new ErrorHandlerEx())) ;
         x.parse() ;

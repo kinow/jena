@@ -20,10 +20,12 @@ package org.apache.jena.atlas.lib;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList ;
 import java.util.List ;
+import java.util.stream.Collectors ;
+import java.util.stream.Stream ;
+
 import org.apache.jena.atlas.io.IndentedWriter ;
 import org.apache.jena.atlas.logging.Log ;
 
@@ -35,7 +37,7 @@ public class ListUtils
     public static <T>
     List<T> unique(List<T> list)
     {
-    		return list.stream().distinct().collect(toList());
+    		return toList(list.stream().distinct()) ;
     }
     
     public static
@@ -45,6 +47,11 @@ public class ListUtils
         for ( int v : values )
             x.add(v) ;
         return x ;
+    }
+    
+    // This is commonly needed
+    public static <T> List<T> toList(Stream<T> stream) {
+        return stream.collect(Collectors.toList()) ;
     }
     
     public static <T> String str(T[] array)
@@ -70,6 +77,22 @@ public class ListUtils
     public static <T> void print(final IndentedWriter out, List<T> list, final CharSequence sep)
     {
 		out.print(list.stream().map(String::valueOf).collect(joining(sep)));
+    }
+    
+    /**
+     * Compare two lists, same elements, order of the lists may be different, elements
+     * must have the same cardinality.
+     */
+    public static <T> boolean equalsUnordered(List<T> list1, List<T> list2) {
+        if ( list1.size() != list2.size() )
+            return false ;
+        // containsAll bothe ways round isn't enough.
+        List<T> list2a = new ArrayList<>(list2) ;
+        for ( T elt : list1 )
+            list2a.remove(elt) ;
+        if ( list2a.size() != 0 )
+            return false ;
+        return true ;
     }
     
     /** Return a list of lists of all the elements of collection in every order

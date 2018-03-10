@@ -34,9 +34,9 @@ import org.apache.jena.fuseki.server.* ;
 import org.apache.jena.query.ReadWrite ;
 import org.apache.jena.sparql.SystemARQ ;
 import org.apache.jena.sparql.core.DatasetGraph ;
-import org.apache.jena.sparql.core.DatasetGraphWithLock ;
 import org.apache.jena.sparql.core.DatasetGraphWrapper ;
 import org.apache.jena.sparql.core.Transactional ;
+import org.apache.jena.sparql.core.TransactionalLock ;
 import org.slf4j.Logger ;
 
 /**
@@ -91,6 +91,8 @@ public class HttpAction
     public HttpServletResponseTracker response ;
     private final String actionURI ;
     private final String contextPath ;
+    // Currently, global.
+    private final DataAccessPointRegistry dataAccessPointRegistry ;
     
     /**
      * Creates a new HTTP Action, using the HTTP request and response, and a given ID.
@@ -111,6 +113,7 @@ public class HttpAction
         this.verbose = verbose ;
         this.contextPath = request.getServletContext().getContextPath() ;
         this.actionURI = ActionLib.actionURI(request) ;
+        this.dataAccessPointRegistry = DataAccessPointRegistry.get(request.getServletContext()) ;
     }
 
     /** Initialization after action creation during lifecycle setup.
@@ -153,21 +156,21 @@ public class HttpAction
         this.dsg = dsg ;
         if ( dsg == null )
             return ;
-        DatasetGraph basedsg = unwrap(dsg) ;
-
-        if ( isTransactional(dsg) ) {
+        setTransactionalPolicy(dsg) ;
+    }
+    
+    private void setTransactionalPolicy(DatasetGraph dsg) {
+        if ( dsg.supportsTransactionAbort() ) {
             // Use transactional if it looks safe - abort is necessary.
-            // It is the responsibility of dsg to manage the basedsg
-            // if the basedsg is not transactional.
-            transactional = (Transactional)dsg ;
+            transactional = dsg ;
             isTransactional = true ;
-        } else if ( isTransactional(basedsg) ) {
-            transactional = (Transactional)basedsg ;
-            // Intermediates may be stateful so there is no real abort. 
+        } else if ( dsg.supportsTransactions() ) {
+            // No abort - e.g. loading data needs buffering against syntax errors.
+            transactional = dsg ;
             isTransactional = false ;
         } else {
-            transactional = new DatasetGraphWithLock(dsg) ;
-            // No real abort.
+            // Nothing to build on.  Be safe. 
+            transactional = TransactionalLock.createMutex() ;
             isTransactional = false ;
         }
     }
@@ -196,18 +199,6 @@ public class HttpAction
     }
 
     /**
-     * Returns <code>true</code> iff the given {@link DatasetGraph} is an instance of {@link Transactional},
-     * <code>false otherwise</code>.
-     *
-     * @param dsg a {@link DatasetGraph}
-     * @return <code>true</code> iff the given {@link DatasetGraph} is an instance of {@link Transactional},
-     * <code>false otherwise</code>
-     */
-    private static boolean isTransactional(DatasetGraph dsg) {
-        return (dsg instanceof Transactional) ;
-    }
-
-    /**
      * A {@link DatasetGraph} may contain other <strong>wrapped DatasetGraph's</strong>. This method will return
      * the first instance (including the argument to this method) that <strong>is not</strong> an instance of
      * {@link DatasetGraphWrapper}.
@@ -215,7 +206,8 @@ public class HttpAction
      * @param dsg a {@link DatasetGraph}
      * @return the first found {@link DatasetGraph} that is not an instance of {@link DatasetGraphWrapper}
      */
-   private static DatasetGraph unwrap(DatasetGraph dsg) {
+    // Unused currently.
+   private static DatasetGraph x_unwrap(DatasetGraph dsg) {
        if ( dsg instanceof DatasetGraphWrapper)
             dsg = ((DatasetGraphWrapper)dsg).getBase() ;
         return dsg ;
@@ -234,6 +226,12 @@ public class HttpAction
         return contextPath ;
     }
     
+    /**
+     * Get the DataAccessPointRegistry for this action
+     */
+    public DataAccessPointRegistry getDataAccessPointRegistry() {
+        return dataAccessPointRegistry ;
+    }
     
     /** Set the endpoint and endpoint name that this is an action for. 
      * @param srvRef {@link Endpoint}

@@ -24,6 +24,7 @@ import org.apache.jena.graph.Node ;
 import org.apache.jena.query.Query ;
 import org.apache.jena.riot.system.IRIResolver;
 import org.apache.jena.shared.PrefixMapping ;
+import org.apache.jena.shared.impl.PrefixMappingImpl;
 import org.apache.jena.sparql.core.Var ;
 
 /**
@@ -51,7 +52,7 @@ public class PrologHandler implements Handler {
 	 * @param x The prefix name
 	 * @return The prefix name with the trialing ':' removed.
 	 */
-	private String canonicalPfx(String x) {
+	private static String canonicalPfx(String x) {
 		if (x.endsWith(":"))
 			return x.substring(0, x.length() - 1);
 		return x;
@@ -82,6 +83,13 @@ public class PrologHandler implements Handler {
 	public void addPrefix(String pfx, String uri) {
 		query.setPrefix(canonicalPfx(pfx), uri);
 	}
+	
+	/**
+	 * Clear the prefix mapping.
+	 */
+	public void clearPrefixes() {
+		query.setPrefixMapping( new PrefixMappingImpl() );
+	}
 
 	/**
 	 * Add the map of prefixes to the query prefixes.
@@ -91,6 +99,10 @@ public class PrologHandler implements Handler {
 		for (Map.Entry<String, String> e : prefixes.entrySet()) {
 			addPrefix(e.getKey(), e.getValue());
 		}
+	}
+	
+	public PrefixMapping getPrefixes() {
+		return query.getPrefixMapping();
 	}
 
 	/**

@@ -71,9 +71,6 @@ public class FmtExprSPARQL
         }
 
         @Override
-        public void startVisit() { }
-
-        @Override
         public void visit(ExprFunction0 expr)
         {
             if ( expr.getOpName() == null )
@@ -207,6 +204,11 @@ public class FmtExprSPARQL
         }
 
         @Override
+        public void visit(ExprNone none) {
+            out.print("NONE");
+        }
+
+        @Override
         public void visit(ExprVar nv)
         {
             String s = nv.getVarName() ;
@@ -228,9 +230,5 @@ public class FmtExprSPARQL
         {
             out.print(eAgg.asSparqlExpr(context)) ;
         }
-        
-        
-        @Override
-        public void finishVisit() { out.flush() ; }
     }
 }

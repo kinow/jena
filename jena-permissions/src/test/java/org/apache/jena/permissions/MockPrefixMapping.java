@@ -68,6 +68,12 @@ public class MockPrefixMapping implements PrefixMapping
 	}
 
 	@Override
+    public PrefixMapping clearNsPrefixMap()
+	{
+        return this ;
+    }
+
+    @Override
 	public boolean samePrefixMappingAs( final PrefixMapping other )
 	{
 		return false;
@@ -102,4 +108,9 @@ public class MockPrefixMapping implements PrefixMapping
 	{
 		throw new UnsupportedOperationException();
 	}
+
+    @Override
+    public int numPrefixes() {
+        return getNsPrefixMap().size() ;
+    }
 }

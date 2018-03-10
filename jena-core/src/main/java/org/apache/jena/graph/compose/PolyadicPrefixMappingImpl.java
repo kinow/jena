@@ -59,6 +59,13 @@ public class PolyadicPrefixMappingImpl extends PrefixMappingImpl implements Pref
         getBaseMapping().removeNsPrefix( prefix );
         return this;
         }
+    
+    @Override public PrefixMapping clearNsPrefixMap()
+        {
+        checkUnlocked();
+        getBaseMapping().clearNsPrefixMap() ;
+        return this;
+        }
         
     /**
         Add the bindings of other to our own. We defer to the general case 
@@ -185,6 +192,16 @@ public class PolyadicPrefixMappingImpl extends PrefixMappingImpl implements Pref
             }
         return s;
         }
+    
+    
+    @Override
+    public boolean hasNoMappings()
+        { return getBaseMapping().hasNoMappings(); }
+
+    @Override
+    public int numPrefixes()
+        { return getBaseMapping().numPrefixes(); }
+    
     
     @Override public String qnameFor( String uri )
         {

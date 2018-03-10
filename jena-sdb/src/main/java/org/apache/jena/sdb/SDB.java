@@ -89,16 +89,12 @@ public class SDB
             return ;
         synchronized(initLock) {
             if ( initialized ) {
-                if ( JenaSystem.DEBUG_INIT )
-                    System.err.println("SDB.init - skip") ;
+                JenaSystem.logLifecycle("SDB.init - skip") ;
                 return ;
             }
             initialized = true ;
-            if ( JenaSystem.DEBUG_INIT )
-                System.err.println("SDB.init - start") ;
+            JenaSystem.logLifecycle("SDB.init - start") ;
 
-            // Better not to break up BGPs too much.
-            ARQ.getContext().set(ARQ.optFilterPlacement, false) ;
             MappingRegistry.addPrefixMapping(SDB.symbolPrefix, SDB.symbolSpace) ;
 
             // Default is 1000 4Kpages.
@@ -116,8 +112,7 @@ public class SDB
             SDB.getContext().setIfUndef(annotateGeneratedSQL,  true) ;
             //SDB.getContext().setIfUndef(unionDefaultGraph,     false) ;
             AssemblerVocab.init(); 
-            if ( JenaSystem.DEBUG_INIT )
-                System.err.println("SDB.init - finish") ;
+            JenaSystem.logLifecycle("SDB.init - finish") ;
         }
     }
     
@@ -156,7 +151,7 @@ public class SDB
 
     // ----------------------------------
     
-    static private String metadataLocation = "org/apacge/jena/sdb/sdb-properties.xml" ;
+    static private String metadataLocation = "org/apache/jena/sdb/sdb-properties.xml" ;
     static private Metadata metadata = new Metadata(metadataLocation) ;
     
     /** The root package name for SDB */   

@@ -23,7 +23,17 @@ import javax.servlet.ServletContextEvent ;
 import javax.servlet.ServletContextListener ;
 
 import org.apache.jena.fuseki.Fuseki ;
+import org.apache.jena.fuseki.FusekiException;
 import org.apache.jena.tdb.StoreConnection ;
+
+/** Setup configurtation.
+ * The order is controlled by {@code web.xml}:
+ * <ul>
+ * <li>{@link FusekiServerEnvironmentInit}
+ * <li>{@link ShiroEnvironmentLoader}
+ * <li>{@link FusekiServerListener}, the main configuration
+ * </ul>
+ */
 
 public class FusekiServerListener implements ServletContextListener {
 
@@ -39,11 +49,7 @@ public class FusekiServerListener implements ServletContextListener {
         String x = servletContext.getContextPath() ;
         if ( ! x.isEmpty() ) 
             Fuseki.configLog.info("Context path = "+x) ;
-//        String x = System.getProperty("user.dir") ;
-//        Path currentRelativePath = Paths.get("");
-//        String s = currentRelativePath.toAbsolutePath().toString();
-//        confLog.info("dir1 = "+x+" : dir2 = "+s) ;
-        init() ;
+        serverInitialization(servletContext) ;
     }
 
     @Override
@@ -55,19 +61,23 @@ public class FusekiServerListener implements ServletContextListener {
         StoreConnection.reset();
     }
 
-    public synchronized void init() {
+    private synchronized void serverInitialization(ServletContext servletContext) {
         if ( initialized )
             return ;
         initialized = true ;
 
+        DataAccessPointRegistry registry = new DataAccessPointRegistry() ;
+        DataAccessPointRegistry.set(servletContext, registry);
+        
         try {
-            FusekiServer.init() ; 
+            FusekiServer.formatBaseArea() ; 
             if ( ! FusekiServer.serverInitialized ) {
                 Fuseki.serverLog.error("Failed to initialize : Server not running") ;
                 return ;
             }
-            // The command line code sets initialSetup. In a non-commandline startup,
-            // initialSetup is null. Set to include a possible config.ttl in the BASE area.
+            
+            // The command line code sets initialSetup.
+            // In a non-commandline startup, initialSetup is null. 
             if ( initialSetup == null ) {
                 initialSetup = new ServerInitialConfig() ;
                 String cfg = FusekiEnv.FUSEKI_BASE.resolve(FusekiServer.DFT_CONFIG).toAbsolutePath().toString() ;
@@ -75,10 +85,11 @@ public class FusekiServerListener implements ServletContextListener {
             }
 
             if ( initialSetup != null ) {
-                FusekiServer.initializeDataAccessPoints(initialSetup, FusekiServer.dirConfiguration.toString()) ;
+                FusekiServer.initializeDataAccessPoints(registry,
+                                                        initialSetup, FusekiServer.dirConfiguration.toString()) ;
             } else {
                 Fuseki.serverLog.error("No configuration") ;
-                System.exit(0) ;
+                throw new FusekiException("No configuration") ;
             }
         } catch (Throwable th) { 
             Fuseki.serverLog.error("Exception in initialization: {}", th.getMessage()) ;

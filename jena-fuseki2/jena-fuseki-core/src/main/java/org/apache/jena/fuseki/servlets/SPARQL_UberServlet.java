@@ -34,10 +34,7 @@ import org.apache.jena.fuseki.DEF ;
 import org.apache.jena.fuseki.Fuseki ;
 import org.apache.jena.fuseki.FusekiException ;
 import org.apache.jena.fuseki.conneg.ConNeg ;
-import org.apache.jena.fuseki.server.DataAccessPoint ;
-import org.apache.jena.fuseki.server.DataService ;
-import org.apache.jena.fuseki.server.Endpoint ;
-import org.apache.jena.fuseki.server.OperationName ;
+import org.apache.jena.fuseki.server.* ;
 import org.apache.jena.riot.web.HttpNames ;
 
 /** This servlet can be attached to a dataset location
@@ -118,7 +115,7 @@ public abstract class SPARQL_UberServlet extends ActionSPARQL
     private final ActionSPARQL uploadServlet   = new SPARQL_Upload() ;
     private final ActionSPARQL gspServlet_R    = new SPARQL_GSP_R() ;
     private final ActionSPARQL gspServlet_RW   = new SPARQL_GSP_RW() ;
-    private final ActionSPARQL restQuads_R     = new REST_Quads_R() ; // XXX
+    private final ActionSPARQL restQuads_R     = new REST_Quads_R() ;
     private final ActionSPARQL restQuads_RW    = new REST_Quads_RW() ;
 
     public SPARQL_UberServlet() { super(); }
@@ -144,7 +141,7 @@ public abstract class SPARQL_UberServlet extends ActionSPARQL
     @Override
     protected String mapRequestToDataset(HttpAction action) {
         String uri = ActionLib.removeContextPath(action) ;
-        return ActionLib.mapRequestToDatasetLongest$(uri) ;
+        return ActionLib.mapRequestToDatasetLongest$(uri, action.getDataAccessPointRegistry()) ;
     }
 
     /** Intercept the processing cycle at the point where the action has been set up,
@@ -153,6 +150,9 @@ public abstract class SPARQL_UberServlet extends ActionSPARQL
      */
     @Override
     protected void executeAction(HttpAction action) {
+        
+        // DEBUG: DataAccessPointRegistry.print("UberServlet ");
+        
         long id = action.id ;
         HttpServletRequest request = action.request ;
         HttpServletResponse response = action.response ;
@@ -171,70 +171,61 @@ public abstract class SPARQL_UberServlet extends ActionSPARQL
 
         boolean hasParams = request.getParameterMap().size() > 0 ;
 
+        // Is it a query or update because of a ?query= , ?request= parameter? 
         // Test for parameters - includes HTML forms.
-        boolean hasParamQuery           = request.getParameter(HttpNames.paramQuery) != null ;
+        boolean isQuery           = request.getParameter(HttpNames.paramQuery) != null ;
         // Include old name "request="
-        boolean hasParamUpdate          = request.getParameter(HttpNames.paramUpdate) != null || request.getParameter(HttpNames.paramRequest) != null ;
+        boolean isUpdate          = request.getParameter(HttpNames.paramUpdate) != null || request.getParameter(HttpNames.paramRequest) != null ;
+
         boolean hasParamGraph           = request.getParameter(HttpNames.paramGraph) != null ;
         boolean hasParamGraphDefault    = request.getParameter(HttpNames.paramGraphDefault) != null ;
 
+        boolean hasTrailing = ( trailing.length() != 0 ) ;
+        
         String ct = request.getContentType() ;
         String charset = request.getCharacterEncoding() ;
 
         MediaType mt = null ;
-        if ( ct != null )
+        if ( ct != null ) {
+            // Parse it.
             mt = MediaType.create(ct, charset) ;
-
+            // Another way to send queries and updates is with the content-type. 
+            if ( contentTypeSPARQLQuery.equalsIgnoreCase(ct) )
+                isQuery = true ;
+            else if ( contentTypeSPARQLUpdate.equalsIgnoreCase(ct) )
+                isUpdate = true ;
+        }
+            
         if (action.log.isInfoEnabled() ) {
             //String cxt = action.getContextPath() ;
             action.log.info(format("[%d] %s %s :: '%s' :: %s ? %s", id, method, desc.getName(), trailing, (mt==null?"<none>":mt), (qs==null?"":qs))) ;
         }
-
-        boolean hasTrailing = ( trailing.length() != 0 ) ;
-
-        if ( !hasTrailing && !hasParams ) {
-            // REST dataset.
-            boolean isGET = method.equals(HttpNames.METHOD_GET) ;
-            boolean isHEAD = method.equals(HttpNames.METHOD_HEAD) ;
-
-            // Check enabled.
-            if ( isGET || isHEAD ) {
-                if ( allowREST_R(action) )
-                    restQuads_R.executeLifecycle(action) ;
-                else
-                    ServletOps.errorMethodNotAllowed("Read-only dataset : "+method) ;
-                return ;
-            }
-            // If the read-only server has the same name as the writable server,
-            // and the default fro a read-only server is "/data", like a writable dataset,
-            // this test is insufficient.
-            if ( allowREST_W(action) )
-                restQuads_RW.executeLifecycle(action) ;
-            else
-                ServletOps.errorMethodNotAllowed("Read-only dataset : "+method) ;
-            return ;
-        }
-
+        
         if ( !hasTrailing ) {
-            boolean isPOST = action.getRequest().getMethod().equals(HttpNames.METHOD_POST) ;
-            // Nothing after the DataAccessPoint i.e Dataset by name.
-            // e.g.  http://localhost:3030/ds?query=
-            // Query - GET or POST.
-            // Query - ?query= or body of application/sparql-query
-            if ( hasParamQuery || ( isPOST && contentTypeSPARQLQuery.equalsIgnoreCase(ct) ) ) {
-                // SPARQL Query
+            // Nothing after the DataAccessPoint i.e. Dataset by name.
+            // Action on the dataset itself. This can be:
+            //
+            //   http://localhost:3030/ds?query=
+            //   http://localhost:3030/ds and a content type of "applicatiopn/sparql-query"
+            //
+            //   http://localhost:3030/ds?update=
+            //   http://localhost:3030/ds and a content type of "applicatiopn/sparql-update"
+            //
+            //   http://localhost:3030/ds?default ?graph=  GSP
+            //
+            //   http://localhost:3030/ds   REST quads action on the dataset itself.
+            if ( isQuery ) {
                 if ( !allowQuery(action) )
                     ServletOps.errorMethodNotAllowed("SPARQL query : "+method) ;
                 executeRequest(action, queryServlet) ;
                 return ;
             }
 
-            // Insist on POST for update.
-            // Update - ?update= or body of application/sparql-update
-            if ( isPOST && ( hasParamUpdate || contentTypeSPARQLUpdate.equalsIgnoreCase(ct) ) ) {
+            if ( isUpdate ) {
                 // SPARQL Update
                 if ( !allowUpdate(action) )
                     ServletOps.errorMethodNotAllowed("SPARQL update : "+method) ;
+                // This will deal with using GET.
                 executeRequest(action, updateServlet) ;
                 return ;
             }
@@ -245,10 +236,33 @@ public abstract class SPARQL_UberServlet extends ActionSPARQL
                 return ;
             }
 
-            ServletOps.errorBadRequest("Malformed request") ;
-            ServletOps.errorMethodNotAllowed("SPARQL Graph Store Protocol : "+method) ;
+            if ( hasParams ) {
+                // Unrecognized ?key=value
+                ServletOps.errorBadRequest("Malformed request") ;
+            }
+            
+            // REST dataset.
+            boolean isGET = method.equals(HttpNames.METHOD_GET) ;
+            boolean isHEAD = method.equals(HttpNames.METHOD_HEAD) ;
+
+            // Check enabled.
+            if ( isGET || isHEAD ) {
+                if ( allowQuadsR(action) )
+                    restQuads_R.executeLifecycle(action) ;
+                else
+                    ServletOps.errorMethodNotAllowed(method) ;
+                return ;
+            }
+            
+            if ( allowQuadsW(action) )
+                restQuads_RW.executeLifecycle(action) ;
+            else
+                ServletOps.errorMethodNotAllowed("Read-only dataset : "+method) ;
+            return ;
         }
 
+        // Has trailing path name => service or direct naming GSP.
+        
         final boolean checkForPossibleService = true ;
         if ( checkForPossibleService && action.getEndpoint() != null ) {
             // There is a trailing part.
@@ -265,6 +279,8 @@ public abstract class SPARQL_UberServlet extends ActionSPARQL
                 if ( serviceDispatch(action, OperationName.GSP_R, restQuads_R) ) return ;
                 if ( serviceDispatch(action, OperationName.GSP_RW, restQuads_RW) ) return ;
             }
+            if ( serviceDispatch(action, OperationName.Quads_RW, restQuads_RW) ) return ;
+            if ( serviceDispatch(action, OperationName.Quads_R, restQuads_R) ) return ;
         }
         // There is a trailing part - params are illegal by this point.
         if ( hasParams )

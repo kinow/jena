@@ -21,7 +21,7 @@ package org.apache.jena.tdb.store;
 import java.util.* ;
 
 import org.apache.jena.atlas.iterator.Iter ;
-import org.apache.jena.atlas.lib.Tuple ;
+import org.apache.jena.atlas.lib.tuple.Tuple ;
 import org.apache.jena.atlas.logging.Log ;
 import org.apache.jena.graph.Node ;
 import org.apache.jena.graph.NodeFactory ;
@@ -45,7 +45,7 @@ public class DatasetPrefixesTDB implements DatasetPrefixStorage
      */
     
     static final RecordFactory factory = new RecordFactory(3*NodeId.SIZE, 0) ;
-    static final String unamedGraphURI = "" ;
+    static final String unnamedGraphURI = "" ;
     
     private final NodeTupleTable nodeTupleTable ;
     
@@ -140,31 +140,38 @@ public class DatasetPrefixesTDB implements DatasetPrefixStorage
     }
     
     @Override
-    public synchronized void removeFromPrefixMap(String graphName, String prefix) {
+    public void removeFromPrefixMap(String graphName, String prefix) {
         Node g = NodeFactory.createURI(graphName) ; 
-        Node p = NodeFactory.createLiteral(prefix) ; 
-        Iterator<Tuple<Node>> iter = nodeTupleTable.find(g, p, null) ;
+        Node p = NodeFactory.createLiteral(prefix) ;
+        removeAll(g, p, null) ;
+    }
+
+    @Override
+    public void removeAllFromPrefixMap(String graphName) {
+        Node g = NodeFactory.createURI(graphName) ; 
+        removeAll(g, null, null) ;
+    }
+
+    /** Remove by pattern */
+    private synchronized void removeAll(Node g, Node p, Node uri) {
+        Iterator<Tuple<Node>> iter = nodeTupleTable.find(g, p, uri) ;
         List<Tuple<Node>> list = Iter.toList(iter) ;    // Materialize.
         Iter.close(iter) ;
         for ( Tuple<Node> tuple : list )
-            nodeTupleTable.deleteRow(g, p, tuple.get(2)) ;
+            nodeTupleTable.deleteRow(tuple.get(0), tuple.get(1), tuple.get(2)) ; 
     }
-
+    
     public NodeTupleTable getNodeTupleTable()  { return nodeTupleTable ; }
     
     /** Return a PrefixMapping for the unamed graph */
     @Override
     public PrefixMapping getPrefixMapping()
-    { return getPrefixMapping(unamedGraphURI) ; }
+    { return getPrefixMapping(unnamedGraphURI) ; }
 
     /** Return a PrefixMapping for a named graph */
     @Override
     public PrefixMapping getPrefixMapping(String graphName) { 
-        PrefixMapping pm = new GraphPrefixesProjection(graphName, this) ;
-        // Force into cache.
-        // See JENA-81
-        pm.getNsPrefixMap() ;
-        return pm ;
+        return new GraphPrefixesProjection(graphName, this) ;
     }
     
     @Override

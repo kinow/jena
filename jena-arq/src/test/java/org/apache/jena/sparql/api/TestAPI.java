@@ -19,6 +19,7 @@
 package org.apache.jena.sparql.api;
 
 import java.util.Iterator;
+import java.util.Set ;
 
 import org.apache.jena.atlas.iterator.Iter ;
 import org.apache.jena.atlas.junit.BaseTest;
@@ -95,13 +96,18 @@ public class TestAPI extends BaseTest
         }
     }
 
-    // This test is slightly dubious. It is testing that the model for the
-    // resource in the result is the same object as the model supplied ot the
-    // query.
+    // The original test (see commented out "assertSame) is test is now bogus.
+    // DatasetImpl no longer caches the default model as that caused problems.
     //
-    // It happens to be true for DatasetImpl and the default model but that's
-    // about it. It is not part of the contract of query/datasets.
-    //
+    // This is testing that the model for the resource in the result is the
+    // same object as the model supplied to the query.
+    // "Same" here means "same contents" includign blank nodes.
+    // 
+    // it used to be that this tested whether they were the same object. 
+    // That is dubious and no longer true even for DatasetImpl (teh default mode
+    // is not cached but recreated on demand so theer are no problems with
+    // transaction boundaries).    
+    // 
     // Left as an active test so the assumption is tested (it has been true for
     // many years). 
     //
@@ -115,7 +121,10 @@ public class TestAPI extends BaseTest
             assertTrue("No results", rs.hasNext()) ;
             QuerySolution qs = rs.nextSolution() ;
             Resource qr = qs.getResource("s") ;
-            assertSame("Not the same model as queried", qr.getModel(), m) ;
+            //assertSame("Not the same model as queried", qr.getModel(), m) ;
+            Set<Statement> s1 = qr.getModel().listStatements().toSet() ;
+            Set<Statement> s2 = m.listStatements().toSet() ;
+            assertEquals(s1,s2) ;
         }
     }
     
@@ -252,14 +261,12 @@ public class TestAPI extends BaseTest
         assertEquals(3, count) ;
     }
     
-    
     @Test public void testReuseQueryObject2()
     {
-        String queryString = "SELECT (count(?s) AS ?c) {?s ?p ?o} GROUP BY ?s";
+        String queryString = "SELECT (count(?o) AS ?c) {?s ?p ?o} GROUP BY ?s";
         Query q = QueryFactory.create(queryString) ;
         
         try(QueryExecution qExec = QueryExecutionFactory.create(q, m)) {
-            
             ResultSet rs = qExec.execSelect() ;
             QuerySolution qs = rs.nextSolution() ;
             assertEquals(3, qs.getLiteral("c").getInt()) ;
@@ -541,26 +548,45 @@ public class TestAPI extends BaseTest
         fail("Short form of construct quad MUST be simple graph patterns!");
     }
     
+    @Test public void testResultSetCloseableGood() {
+        String queryString = "SELECT * { ?s ?p ?o. }";
+        Query q = QueryFactory.create(queryString);
+        QueryExecution qExec = QueryExecutionFactory.create(q, d);
+        try (ResultSetCloseable rs = ResultSetFactory.closeableResultSet(qExec) ) {
+            int x = ResultSetFormatter.consume(rs);
+            assertEquals(1,x);
+        }
+    }
     
-    private QueryExecution makeQExec(String queryString)
-    {
-        Query q = QueryFactory.create(queryString) ;
-        QueryExecution qExec = QueryExecutionFactory.create(q, m) ;
-        return qExec ;
+    @Test(expected=IllegalArgumentException.class) 
+    public void testResultSetCloseableBad() {
+        String queryString = "ASK { ?s ?p ?o. }";
+        Query q = QueryFactory.create(queryString);
+        QueryExecution qExec = QueryExecutionFactory.create(q, d);
+        try (ResultSetCloseable rs = ResultSetFactory.closeableResultSet(qExec) ) {
+            int x = ResultSetFormatter.consume(rs);
+            assertEquals(1,x);
+        }
     }
 
-    private int queryAndCount(String queryString)
-    {
-        QueryExecution qExec = makeQExec(queryString) ;
-        return queryAndCount(qExec) ;
+    private QueryExecution makeQExec(String queryString) {
+        Query q = QueryFactory.create(queryString);
+        QueryExecution qExec = QueryExecutionFactory.create(q, m);
+        return qExec;
     }
 
-    
-    private int queryAndCount(QueryExecution qExec)
-    {
+    private int queryAndCount(String queryString) {
+        QueryExecution qExec = makeQExec(queryString);
+        return queryAndCount(qExec);
+    }
+
+    private int queryAndCount(QueryExecution qExec) {
         try {
-            ResultSet rs = qExec.execSelect() ;
-            return ResultSetFormatter.consume(rs) ;
-        } finally { qExec.close() ; }
+            ResultSet rs = qExec.execSelect();
+            return ResultSetFormatter.consume(rs);
+        }
+        finally {
+            qExec.close();
+        }
     }
 }

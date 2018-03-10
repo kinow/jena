@@ -96,7 +96,7 @@ public abstract class IRIResolver
 
     // ---- Initialization support
     
-    /** Set the error/warnign state of a violation code.
+    /** Set the error/warning state of a violation code.
      * @param factory   IRIFactory
      * @param code      ViolationCodes constant
      * @param isError   Whether it is to be treated an error.
@@ -220,9 +220,9 @@ public abstract class IRIResolver
     }
 
     /**
-     * Resolve a URI against a base. If baseStr is a relative file IRI
-     * then it is first resolved against the current working directory.
-     * If it is an absolute URI, it is normalized.
+     * Resolve a URI against the base for this process. If baseStr is a
+     * relative file IRI then it is first resolved against the current
+     * working directory. If it is an absolute URI, it is normalized.
      * 
      * @param uriStr
      * @return String An absolute URI
@@ -264,9 +264,6 @@ public abstract class IRIResolver
             return globalResolver.getBaseIRI().create(i) ;
 
         IRI base = iriFactory.create(baseStr) ;
-
-        if ("file".equalsIgnoreCase(base.getScheme()))
-            return globalResolver.getBaseIRI().create(i) ;
         return base.create(i) ;
     }
 
@@ -452,14 +449,14 @@ public abstract class IRIResolver
         @Override
         public IRI resolveSilent(String uriStr) {
             if ( resolvedIRIs == null )
-                return resolveSilentCache(uriStr) ;
-            else
                 return resolveSilentNoCache(uriStr) ;
+            else
+                return resolveSilentCache(uriStr) ;
         }
         
         private IRI resolveSilentNoCache(String uriStr) {
             IRI x = IRIResolver.iriFactory.create(uriStr) ;
-            if ( SysRIOT.StrictAbsURINoNormalization ) {
+            if ( SysRIOT.AbsURINoNormalization ) {
                 // Always process "file:", even in strict mode.
                 // file: is widely used in irregular forms.
                 if ( x.isAbsolute() && ! uriStr.startsWith("file:") )

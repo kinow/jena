@@ -27,8 +27,7 @@ import org.apache.jena.sparql.engine.binding.Binding ;
 import org.apache.jena.sparql.expr.nodevalue.XSDFuncOp ;
 import org.apache.jena.sparql.function.FunctionEnv ;
 import org.apache.jena.sparql.graph.NodeTransform;
-import org.apache.jena.sparql.util.ExprUtils ;
-
+import org.apache.jena.sparql.sse.writers.WriterExpr ;
 
 /** A node that is a constraint expression that can be evaluated
  * An Expr is already a Constraint - ExprNode is the base implementation
@@ -57,12 +56,17 @@ public abstract class ExprNode implements Expr
     public abstract NodeValue eval(Binding binding, FunctionEnv env) ; 
     
     @Override
-    public Set<Var> getVarsMentioned()                      { return ExprVars.getVarsMentioned(this) ; }
+    public final Set<Var> getVarsMentioned()                    { return ExprVars.getVarsMentioned(this) ; }
     @Override
-    public void varsMentioned(Collection<Var> acc)          { ExprVars.varsMentioned(acc, this) ; }
+    public final void varsMentioned(Collection<Var> acc)        { ExprVars.varsMentioned(acc, this) ; }
 
-    public Set<String> getVarNamesMentioned()               { return ExprVars.getVarNamesMentioned(this) ; }
-    public void varNamesMentioned(Collection<String> acc)   { ExprVars.varNamesMentioned(acc, this) ; }
+    /** @deprecated Use {@link ExprVars#getVarNamesMentioned} */
+    @Deprecated
+    public Set<String> getVarNamesMentioned()                   { return ExprVars.getVarNamesMentioned(this) ; }
+
+    /** @deprecated Use {@link ExprVars#varNamesMentioned} */
+    @Deprecated
+    public void varNamesMentioned(Collection<String> acc)       { ExprVars.varNamesMentioned(acc, this) ; }
 
     @Override
     public abstract int hashCode() ;
@@ -121,5 +125,5 @@ public abstract class ExprNode implements Expr
     public boolean isGraphPattern()     { return false ; }
     public Op getGraphPattern()         { return null ; }
     @Override
-    public String toString()            { return ExprUtils.fmtSPARQL(this) ; } 
+    public String toString()            { return WriterExpr.asString(this) ; } 
 }

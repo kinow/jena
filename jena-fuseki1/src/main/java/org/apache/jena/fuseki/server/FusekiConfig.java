@@ -122,7 +122,7 @@ public class FusekiConfig
         if ( ! rs.hasNext() )
             log.warn("No services found") ;
         
-        List<DatasetRef> services =  new ArrayList<DatasetRef>() ; 
+        List<DatasetRef> services =  new ArrayList<>() ; 
         
         for ( ; rs.hasNext() ; )
         {
@@ -149,7 +149,7 @@ public class FusekiConfig
     // DatasetRef used where there isn't a real Dataset e.g. the SPARQL processor.  
     
     private static DatasetRef noDataset      = new DatasetRef() ;
-    private static DatasetGraph dummyDSG        = new DatasetGraphReadOnly(DatasetGraphFactory.createMemFixed()) ;
+    private static DatasetGraph dummyDSG        = new DatasetGraphReadOnly(DatasetGraphFactory.create()) ;
     static {
         noDataset.name = "" ;
         noDataset.dataset = dummyDSG ;

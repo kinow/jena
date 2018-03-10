@@ -76,6 +76,12 @@ public interface PrefixMapping
 
     PrefixMapping removeNsPrefix( String prefix );
 
+    /** 
+     * Clear this prefix mapping of all mappings
+     */
+    PrefixMapping clearNsPrefixMap();
+
+    
     /**
         Copies the prefixes from other into this. Any existing binding of the
         same prefix is lost.  The result is this same prefixMapping.
@@ -168,7 +174,20 @@ public interface PrefixMapping
          @return this mapping, locked against changes
     */
     PrefixMapping lock();
-
+    
+    // These can not be called the usual "isEmpty" and "size" because this interface is inherited
+    // in places where those names are in use for the main putrpose of the interface (e.g. Model).  
+    
+    /**
+        Return whether the prefix mapping has any defined prefixes.
+     */
+    default boolean hasNoMappings() { return numPrefixes() == 0 ; }
+    
+    /**
+         Return the number of defined prefixes.
+     */
+    int numPrefixes() ;
+    
     /**
         Exception to throw when the prefix argument to setNsPrefix is
         illegal for some reason.

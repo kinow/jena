@@ -374,7 +374,7 @@ public class XMLHandler extends LexicalHandlerImpl implements ARPErrorNumbers,
         idsUsed = 
         	ignoring(WARN_REDEFINITION_OF_ID)?
         			null:
-        	        new HashMap<IRI, Map<String,ARPLocation>>();
+        	        new HashMap<>();
         idsUsedCount = 0;
         if (options.getEmbedding())
             frame = new LookingForRDF(this, initialContext(base, lang));
@@ -455,7 +455,7 @@ public class XMLHandler extends LexicalHandlerImpl implements ARPErrorNumbers,
                 } catch (MalformedURLException e) {
                     warning(null,
                             WARN_BAD_NAMESPACE_URI,
-                            "toAscii failed for namespace URI: <"
+                            "Bad namespace URI: <"
                                     + u.toString()
                                     + ">. " + e.getMessage());
               } 

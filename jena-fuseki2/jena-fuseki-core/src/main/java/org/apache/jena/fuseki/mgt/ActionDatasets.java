@@ -29,7 +29,6 @@ import java.util.Iterator ;
 import java.util.List ;
 import java.util.Map ;
 
-import javax.servlet.ServletOutputStream ;
 import javax.servlet.http.HttpServletRequest ;
 
 import org.apache.commons.lang3.StringUtils;
@@ -42,9 +41,7 @@ import org.apache.jena.atlas.lib.StrUtils ;
 import org.apache.jena.atlas.web.ContentType ;
 import org.apache.jena.datatypes.xsd.XSDDatatype ;
 import org.apache.jena.fuseki.FusekiLib ;
-import org.apache.jena.fuseki.build.Builder ;
-import org.apache.jena.fuseki.build.Template ;
-import org.apache.jena.fuseki.build.TemplateFunctions ;
+import org.apache.jena.fuseki.build.* ;
 import org.apache.jena.fuseki.server.* ;
 import org.apache.jena.fuseki.servlets.* ;
 import org.apache.jena.graph.Node ;
@@ -92,7 +89,7 @@ public class ActionDatasets extends ActionContainerItem {
         JsonBuilder builder = new JsonBuilder() ;
         builder.startObject("D") ;
         builder.key(JsonConst.datasets) ;
-        JsonDescription.arrayDatasets(builder, DataAccessPointRegistry.get());
+        JsonDescription.arrayDatasets(builder, action.getDataAccessPointRegistry());
         builder.finishObject("D") ;
         return builder.build() ;
     }
@@ -101,7 +98,7 @@ public class ActionDatasets extends ActionContainerItem {
     protected JsonValue execGetItem(HttpAction action) {
         action.log.info(format("[%d] GET dataset %s", action.id, action.getDatasetName())) ;
         JsonBuilder builder = new JsonBuilder() ;
-        DataAccessPoint dsDesc = DataAccessPointRegistry.get().get(action.getDatasetName()) ;
+        DataAccessPoint dsDesc = action.getDataAccessPointRegistry().get(action.getDatasetName()) ;
         if ( dsDesc == null )
             ServletOps.errorNotFound("Not found: dataset "+action.getDatasetName());
         JsonDescription.describe(builder, dsDesc) ;
@@ -113,8 +110,7 @@ public class ActionDatasets extends ActionContainerItem {
     @Override
     protected JsonValue execPostContainer(HttpAction action) {
         JenaUUID uuid = JenaUUID.generate() ;
-        String newURI = uuid.asURI() ;
-        Node gn = NodeFactory.createURI(newURI) ;
+        DatasetDescriptionRegistry registry = FusekiServer.registryForBuild() ;
         
         ContentType ct = FusekiLib.getContentType(action) ;
         
@@ -182,10 +178,8 @@ public class ActionDatasets extends ActionContainerItem {
                 datasetPath = DataAccessPoint.canonical(datasetName) ;
             }
             action.log.info(format("[%d] Create database : name = %s", action.id, datasetPath)) ;
-//            System.err.println("'"+datasetPath+"'") ;
-//            DataAccessPointRegistry.get().forEach((s,dap)->System.err.println("'"+s+"'")); 
             // ---- Check whether it already exists 
-            if ( DataAccessPointRegistry.get().isRegistered(datasetPath) )
+            if ( action.getDataAccessPointRegistry().isRegistered(datasetPath) )
                 // And abort.
                 ServletOps.error(HttpSC.CONFLICT_409, "Name already registered "+datasetPath) ;
             
@@ -206,10 +200,9 @@ public class ActionDatasets extends ActionContainerItem {
 //            modelSys.add(subject, pStatus, FusekiVocab.stateActive) ;
             
             // Need to be in Resource space at this point.
-            DataAccessPoint ref = Builder.buildDataAccessPoint(subject) ;
-            DataAccessPointRegistry.register(datasetPath, ref) ;
+            DataAccessPoint ref = FusekiBuilder.buildDataAccessPoint(subject, registry) ;
+            action.getDataAccessPointRegistry().register(datasetPath, ref) ;
             action.getResponse().setContentType(WebContent.contentTypeTextPlain); 
-            ServletOutputStream out = action.getResponse().getOutputStream() ;
             ServletOps.success(action) ;
             system.commit();
             committed = true ;
@@ -255,14 +248,14 @@ public class ActionDatasets extends ActionContainerItem {
             //dSrv.activate() ;
         } else if ( s.equalsIgnoreCase("offline") ) {
             action.log.info(format("[%d] OFFLINE DATASET %s", action.id, name)) ;
-            DataAccessPoint access = action.getDataAccessPoint() ;
+            //DataAccessPoint access = action.getDataAccessPoint() ;
             //access.goOffline() ;
             dSrv.goOffline() ;  // Affects the target of the name. 
             setDatasetState(name, FusekiVocab.stateOffline) ;  
             //dSrv.offline() ;
         } else if ( s.equalsIgnoreCase("unlink") ) {
             action.log.info(format("[%d] UNLINK ACCESS NAME %s", action.id, name)) ;
-            DataAccessPoint access = action.getDataAccessPoint() ;
+            //DataAccessPoint access = action.getDataAccessPoint() ;
             ServletOps.errorNotImplemented("unlink: dataset"+action.getDatasetName());
             //access.goOffline() ;
             // Registry?
@@ -272,11 +265,11 @@ public class ActionDatasets extends ActionContainerItem {
         return null ;
     }
 
-    private void assemblerFromBody(HttpAction action, StreamRDF dest) {
+    private static void assemblerFromBody(HttpAction action, StreamRDF dest) {
         bodyAsGraph(action, dest) ;
     }
 
-    private void assemblerFromForm(HttpAction action, StreamRDF dest) {
+    private static void assemblerFromForm(HttpAction action, StreamRDF dest) {
         String dbType = action.getRequest().getParameter(paramDatasetType) ;
         String dbName = action.getRequest().getParameter(paramDatasetName) ;
         if ( StringUtils.isBlank(dbType) || StringUtils.isBlank(dbName) )
@@ -302,7 +295,7 @@ public class ActionDatasets extends ActionContainerItem {
         RDFDataMgr.parse(dest, new StringReader(template), "http://base/", Lang.TTL) ;
     }
 
-    private void assemblerFromUpload(HttpAction action, StreamRDF dest) {
+    private static void assemblerFromUpload(HttpAction action, StreamRDF dest) {
         Upload.fileUploadWorker(action, dest);
     }
 
@@ -320,7 +313,7 @@ public class ActionDatasets extends ActionContainerItem {
             name = "" ;
         action.log.info(format("[%d] DELETE ds=%s", action.id, name)) ;
 
-        if ( ! DataAccessPointRegistry.get().isRegistered(name) )
+        if ( ! action.getDataAccessPointRegistry().isRegistered(name) )
             ServletOps.errorNotFound("No such dataset registered: "+name);
 
         systemDSG.begin(ReadWrite.WRITE) ;
@@ -330,13 +323,13 @@ public class ActionDatasets extends ActionContainerItem {
             // Need to reference count operations when they drop to zero
             // or a timer goes off, we delete the dataset.
             
-            DataAccessPoint ref = DataAccessPointRegistry.get().get(name) ;
+            DataAccessPoint ref = action.getDataAccessPointRegistry().get(name) ;
             // Redo check inside transaction.
             if ( ref == null )
                 ServletOps.errorNotFound("No such dataset registered: "+name);
 
             // Make it invisible to the outside.
-            DataAccessPointRegistry.get().remove(name) ;
+            action.getDataAccessPointRegistry().remove(name) ;
             // Delete configuration file.
             // Should be only one, undo damage if multiple.
             FusekiEnv.existingConfigurationFile(name).stream().forEach(FileOps::deleteSilent);
@@ -362,11 +355,11 @@ public class ActionDatasets extends ActionContainerItem {
         }
         
         // Remove the configuration file (if any).
-        DataAccessPointRegistry.get().remove(name) ;
+        action.getDataAccessPointRegistry().remove(name) ;
     }
 
     // Persistent state change.
-    private void setDatasetState(String name, Resource newState) {
+    private static void setDatasetState(String name, Resource newState) {
         boolean committed = false ;
         system.begin(ReadWrite.WRITE) ;
         try {
@@ -431,7 +424,7 @@ public class ActionDatasets extends ActionContainerItem {
         try { input = request.getInputStream() ; } 
         catch (IOException ex) { IO.exception(ex) ; }
 
-        int len = request.getContentLength() ;
+//        int len = request.getContentLength() ;
 //        if ( verbose ) {
 //            if ( len >= 0 )
 //                alog.info(format("[%d]   Body: Content-Length=%d, Content-Type=%s, Charset=%s => %s", action.id, len,

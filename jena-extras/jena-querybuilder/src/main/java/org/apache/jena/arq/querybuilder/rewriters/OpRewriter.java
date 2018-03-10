@@ -63,7 +63,7 @@ class OpRewriter extends AbstractRewriter<Op> implements OpVisitor {
 	}
 
 	private List<Op> rewriteOpList(List<Op> lst) {
-		List<Op> retval = new ArrayList<Op>();
+		List<Op> retval = new ArrayList<>();
 		for (Op o : lst) {
 			o.visit(this);
 			retval.add(pop());
@@ -161,7 +161,7 @@ class OpRewriter extends AbstractRewriter<Op> implements OpVisitor {
 	@Override
 	public void visit(OpFilter opFilter) {
 		opFilter.getSubOp().visit(this);
-		push(OpFilter.filter(
+		push(OpFilter.filterBy(
 				new ExprRewriter(values).rewrite(opFilter.getExprs()), pop()));
 	}
 
@@ -282,7 +282,7 @@ class OpRewriter extends AbstractRewriter<Op> implements OpVisitor {
 	@Override
 	public void visit(OpProject opProject) {
 		opProject.getSubOp().visit(this);
-		List<Var> vars = new ArrayList<Var>();
+		List<Var> vars = new ArrayList<>();
 		for (Var v : opProject.getVars()) {
 			Node n = changeNode(v);
 			vars.add(Var.alloc(n));
@@ -313,7 +313,7 @@ class OpRewriter extends AbstractRewriter<Op> implements OpVisitor {
 		opGroup.getSubOp().visit(this);
 		ExprRewriter expRewriter = new ExprRewriter(values);
 		VarExprList groupVars = rewrite(opGroup.getGroupVars());
-		List<ExprAggregator> aggregators = new ArrayList<ExprAggregator>();
+		List<ExprAggregator> aggregators = new ArrayList<>();
 		for (ExprAggregator ea : opGroup.getAggregators()) {
 			ea.visit(expRewriter);
 			aggregators.add((ExprAggregator) expRewriter.pop());

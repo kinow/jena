@@ -19,6 +19,7 @@
 package org.apache.jena.riot ;
 
 import org.apache.jena.query.ARQ ;
+import org.apache.jena.riot.resultset.ResultSetLang;
 import org.apache.jena.sparql.SystemARQ ;
 import org.apache.jena.sparql.mgt.SystemInfo ;
 import org.apache.jena.sparql.util.Context ;
@@ -61,13 +62,11 @@ public class RIOT {
             return ;
         synchronized (initLock) {
             if ( initialized ) {
-                if ( JenaSystem.DEBUG_INIT )
-                    System.err.println("RIOT.init - skip") ;
+                JenaSystem.logLifecycle("RIOT.init - skip") ;
                 return ;
             }
             initialized = true ;
-            if ( JenaSystem.DEBUG_INIT )
-                System.err.println("RIOT.init - start") ;
+            JenaSystem.logLifecycle("RIOT.init - start") ;
             // Be careful with what this touches - don't touch ARQ.*
             // because that depends on Jena core and we may be
             // initializing because IO_Ctl (ie. Jena core)
@@ -75,14 +74,14 @@ public class RIOT {
             RDFLanguages.init() ;
             RDFParserRegistry.init() ;
             RDFWriterRegistry.init() ;
+            ResultSetLang.init();
 
             IO_Jena.wireIntoJena() ;
 
             // Don't register JMX info with ARQ as it may not be initialized
             // itself and we can get into a circularity.
             // This is done in ARQ.init at the proper moment.
-            if ( JenaSystem.DEBUG_INIT )
-                System.err.println("RIOT.init - finish") ;
+            JenaSystem.logLifecycle("RIOT.init - finish") ;
         }
     }
 
@@ -107,4 +106,12 @@ public class RIOT {
     public static String getBuildDate() {
         return ARQ.BUILD_DATE ;
     }
+    
+    /**
+     * Symbol to use to pass (in a Context object) the "@context" to be used when reading jsonld
+     * (overriding the actual @context in the jsonld)
+     * Expected value: the value of the "@context", 
+     * as expected by the JSONLD-java API (a Map) */
+    public static final Symbol JSONLD_CONTEXT = Symbol.create("http://jena.apache.org/riot/jsonld#JSONLD_CONTEXT");
+
 }

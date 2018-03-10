@@ -20,9 +20,9 @@ package org.apache.jena.riot.lang;
 
 import static org.apache.jena.riot.tokens.TokenType.EOF ;
 import static org.apache.jena.riot.tokens.TokenType.NODE ;
+
 import org.apache.jena.atlas.AtlasException ;
 import org.apache.jena.atlas.iterator.PeekIterator ;
-import org.apache.jena.graph.Node ;
 import org.apache.jena.riot.RiotParseException ;
 import org.apache.jena.riot.system.ErrorHandler ;
 import org.apache.jena.riot.system.ParserProfile ;
@@ -42,7 +42,7 @@ public class LangEngine
         this.tokens = tokens ;
         this.profile = profile ;
         // The PeekIterator is always loaded with the next token until the end
-        // (for simplicity) but it measn this can throw an exception. 
+        // (for simplicity) but it means this can throw an exception. 
         try { this.peekIter = new PeekIterator<>(tokens) ; }
         catch (RiotParseException ex) { raiseException(ex) ; }
     }
@@ -117,11 +117,11 @@ public class LangEngine
         }
     }
 
-    protected final Node scopedBNode(Node scopeNode, String label)
-    {
-        return profile.getLabelToNode().get(scopeNode, label) ;
-    }
-    
+//    protected final Node scopedBNode(Node scopeNode, String label)
+//    {
+//        return profile.getLabelToNode().get(scopeNode, label) ;
+//    }
+//    
     protected final void expectOrEOF(String msg, TokenType tokenType)
     {
         // DOT or EOF

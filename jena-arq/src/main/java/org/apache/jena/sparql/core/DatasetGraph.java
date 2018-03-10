@@ -35,7 +35,7 @@ import org.apache.jena.sparql.util.Context ;
  * is not defined; see the specific implementation.
  */
 
-public interface DatasetGraph extends Closeable
+public interface DatasetGraph extends Transactional, Closeable
 {
     // ---- Graph container view
 
@@ -73,7 +73,9 @@ public interface DatasetGraph extends Closeable
      */
     public void addGraph(Node graphName, Graph graph) ;
 
-    /** Remove all data associated with the named graph */
+    /** Remove all data associated with the named graph.
+     * This will include prefixes associated with the graph.
+     */
     public void removeGraph(Node graphName) ;
 
     /** Iterate over all names of named graphs */
@@ -140,4 +142,24 @@ public interface DatasetGraph extends Closeable
     /** Close the dataset */
     @Override
     public void close() ;
+
+    /**
+     * A {@code DatasetGraph} supports tranactions if it provides {@link #begin}/
+     * {@link #commit}/{@link #end}. There core storage {@code DatasetGraph} that
+     * provide fully serialized transactions.  {@code DatasetGraph} that provide
+     * functionality acorss independent systems can not provide such strong guarantees.
+     * For example, they may use MRSW locking and some isolation control.
+     * Specifically, they do not necessarily provide {@link #abort}.
+     * <p>
+     * See {@link #supportsTransactionAbort()} for {@link #abort}.
+     * In addition, check details of a specific implementation.
+     */
+    public boolean supportsTransactions() ;
+    
+    /** Declare whether {@link #abort} is supported.
+     *  This goes along with clearing up after exceptions inside application transaction code.
+     */
+    public default boolean supportsTransactionAbort() {
+        return false;
+    }
 }

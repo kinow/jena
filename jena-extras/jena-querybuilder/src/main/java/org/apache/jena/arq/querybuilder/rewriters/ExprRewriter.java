@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.jena.atlas.lib.InternalErrorException;
 import org.apache.jena.graph.Node ;
 import org.apache.jena.query.SortCondition ;
 import org.apache.jena.sparql.algebra.Op ;
@@ -43,12 +44,6 @@ public class ExprRewriter extends AbstractRewriter<Expr> implements ExprVisitor 
 	 */
 	public ExprRewriter(Map<Var, Node> values) {
 		super(values);
-	}
-
-	@Override
-	public void startVisit() {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -87,9 +82,9 @@ public class ExprRewriter extends AbstractRewriter<Expr> implements ExprVisitor 
 		push(retval);
 	}
 
-	private void setExprList(ExprNode n, ExprList exprList) {
+	private static void setExprList(ExprFunctionN n, ExprList exprList) {
 		try {
-			Field f = n.getClass().getField("ExprList");
+			Field f = ExprFunctionN.class.getDeclaredField("args");
 			f.setAccessible(true);
 			f.set(n, exprList);
 		} catch (NoSuchFieldException e) {
@@ -133,7 +128,13 @@ public class ExprRewriter extends AbstractRewriter<Expr> implements ExprVisitor 
 		push(rewriter.pop());
 	}
 
-	@Override
+    @Override
+    public void visit(ExprNone none) {
+        // This should not occur.
+        throw new InternalErrorException("Visit Expr.NONE");
+    }
+
+    @Override
 	public void visit(ExprVar nv) {
 		Node n = changeNode(nv.asVar());
 		if (n.isVariable()) {
@@ -154,18 +155,12 @@ public class ExprRewriter extends AbstractRewriter<Expr> implements ExprVisitor 
 
 	}
 
-	@Override
-	public void finishVisit() {
-		// TODO Auto-generated method stub
-
-	}
-
 	public final List<SortCondition> rewriteSortConditionList(
 			List<SortCondition> lst) {
 		if (lst == null) {
 			return null;
 		}
-		List<SortCondition> retval = new ArrayList<SortCondition>();
+		List<SortCondition> retval = new ArrayList<>();
 		for (SortCondition sc : lst) {
 			retval.add(rewrite(sc));
 		}

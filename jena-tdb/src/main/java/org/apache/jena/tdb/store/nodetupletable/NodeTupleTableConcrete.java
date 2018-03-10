@@ -24,7 +24,8 @@ import java.util.Iterator ;
 
 import org.apache.jena.atlas.iterator.Iter ;
 import org.apache.jena.atlas.iterator.NullIterator ;
-import org.apache.jena.atlas.lib.Tuple ;
+import org.apache.jena.atlas.lib.tuple.Tuple ;
+import org.apache.jena.atlas.lib.tuple.TupleFactory ;
 import org.apache.jena.graph.Node ;
 import org.apache.jena.tdb.TDBException ;
 import org.apache.jena.tdb.lib.TupleLib ;
@@ -83,7 +84,7 @@ public class NodeTupleTableConcrete implements NodeTupleTable
             for (int i = 0; i < nodes.length; i++)
                 n[i] = nodeTable.getAllocateNodeId(nodes[i]) ;
 
-            Tuple<NodeId> t = Tuple.create(n) ;
+            Tuple<NodeId> t = TupleFactory.tuple(n) ;
             return tupleTable.add(t) ;
         } finally
         {
@@ -101,11 +102,12 @@ public class NodeTupleTableConcrete implements NodeTupleTable
             for (int i = 0; i < nodes.length; i++)
             {
                 NodeId id = idForNode(nodes[i]) ;
-                if (NodeId.isDoesNotExist(id)) return false ;
+                if (NodeId.isDoesNotExist(id)) 
+                    return false ;
                 n[i] = id ;
             }
 
-            Tuple<NodeId> t = Tuple.create(n) ;
+            Tuple<NodeId> t = TupleFactory.tuple(n) ;
             return tupleTable.delete(t) ;
         } finally
         {
@@ -140,7 +142,8 @@ public class NodeTupleTableConcrete implements NodeTupleTable
             for (int i = 0; i < nodes.length; i++)
             {
                 NodeId id = idForNode(nodes[i]) ;
-                if (NodeId.isDoesNotExist(id)) return Iter.nullIterator() ;
+                if (NodeId.isDoesNotExist(id)) 
+                    return Iter.nullIterator() ;
                 n[i] = id ;
             }
             return find(n) ; // **public call
@@ -151,7 +154,7 @@ public class NodeTupleTableConcrete implements NodeTupleTable
     @Override
     public Iterator<Tuple<NodeId>> find(NodeId... ids)
     {
-        Tuple<NodeId> tuple = Tuple.create(ids) ;
+        Tuple<NodeId> tuple = TupleFactory.tuple(ids) ;
         return find(tuple) ;
     }
 
@@ -229,7 +232,6 @@ public class NodeTupleTableConcrete implements NodeTupleTable
         return tupleTable.size() ;
     }
 
-    // @Override
     @Override
     public final void close()
     {
@@ -242,7 +244,6 @@ public class NodeTupleTableConcrete implements NodeTupleTable
         finally { finishWrite() ; }
     }
 
-    // @Override
     @Override
     public final void sync()
     {

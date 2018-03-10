@@ -18,11 +18,13 @@
 
 package org.apache.jena.shared.impl;
 
-import java.util.*;
+import java.util.ArrayList ;
+import java.util.List ;
+import java.util.Map ;
 import java.util.Map.Entry;
 
 import org.apache.jena.rdf.model.impl.Util ;
-import org.apache.jena.shared.* ;
+import org.apache.jena.shared.PrefixMapping ;
 import org.apache.jena.util.CollectionFactory ;
 import org.apache.xerces.util.XMLChar;
 
@@ -43,15 +45,19 @@ public class PrefixMappingImpl implements PrefixMapping
         URItoPrefix = CollectionFactory.createHashedMap(); 
         }
     
-    protected void set( String prefix, String uri )
-        {
+    protected void set(String prefix, String uri) {
         prefixToURI.put(prefix, uri) ;
         URItoPrefix.put(uri, prefix) ;
-        }
-    
-    protected String get( String prefix )
-        { return prefixToURI.get( prefix ); }
-           
+    }
+
+    protected String get(String prefix) {
+        return prefixToURI.get(prefix) ;
+    }
+
+    protected void remove(String prefix) {
+        prefixToURI.remove(prefix) ;
+    }
+
     @Override
     public PrefixMapping lock()
         { 
@@ -74,10 +80,21 @@ public class PrefixMappingImpl implements PrefixMapping
     public PrefixMapping removeNsPrefix( String prefix )
         {
         checkUnlocked();
-        prefixToURI.remove( prefix );
-        regenerateReverseMapping();
+        remove(prefix);
+        regenerateReverseMapping() ;
         return this;
         }
+    
+    @Override
+    public PrefixMapping clearNsPrefixMap() {
+        checkUnlocked();
+        // Do by calling down via the interception point remove(prefix).
+        // Copy prefixes to avoid possible concurrent modification exceptions
+        List<String> prefixes = new ArrayList<>(prefixToURI.keySet()) ;
+        prefixes.forEach(p->remove(p));
+        regenerateReverseMapping() ;
+        return this ;
+    }
     
     protected void regenerateReverseMapping()
         {
@@ -235,6 +252,14 @@ public class PrefixMappingImpl implements PrefixMapping
             : equalsByMap( other )
             ;
         }
+    
+    @Override
+    public boolean hasNoMappings()
+        { return prefixToURI.isEmpty(); }
+
+    @Override
+    public int numPrefixes()
+        { return prefixToURI.size(); }
     
     protected boolean equals( PrefixMappingImpl other )
         { return other.sameAs( this ); }

@@ -22,6 +22,7 @@ import java.util.Iterator ;
 
 import org.apache.jena.atlas.iterator.Iter ;
 import org.apache.jena.atlas.lib.Sync ;
+import org.apache.jena.graph.Capabilities;
 import org.apache.jena.graph.Node ;
 import org.apache.jena.graph.Triple ;
 import org.apache.jena.graph.impl.GraphBase ;
@@ -30,12 +31,17 @@ import org.apache.jena.shared.JenaException ;
 import org.apache.jena.shared.PrefixMapping ;
 import org.apache.jena.shared.impl.PrefixMappingImpl ;
 import org.apache.jena.sparql.SystemARQ ;
+import org.apache.jena.sparql.graph.GraphUnionRead ;
 import org.apache.jena.util.iterator.ExtendedIterator ;
 import org.apache.jena.util.iterator.WrappedIterator ;
 
 /** Implement a Graph as a view of the DatasetGraph.
  * 
  *  It maps graph operations to quad operations. 
+ *  
+ *  {@link GraphUnionRead} provides a union graph that does not assume quads, but loops on graphs.
+ *  
+ *  @see GraphUnionRead
  */ 
 
 public class GraphView extends GraphBase implements Sync
@@ -94,12 +100,7 @@ public class GraphView extends GraphBase implements Sync
     
     @Override
     protected PrefixMapping createPrefixMapping() {
-//        // Unwrap if possible, else put in an in-memory placeholder. 
-//        // Does not work so simply - TDB may have gone transactional.        
-//        if ( dsg instanceof DatasetGraphWrapper ) {
-//            DatasetGraph dsg2 = ((DatasetGraphWrapper)dsg).getBase() ;
-//            return dsg2.getDefaultGraph().getPrefixMapping() ;    
-//        }
+        // Subclasses should override this but in the absence of anything better ...
         return new PrefixMappingImpl() ;
     }
 
@@ -164,6 +165,58 @@ public class GraphView extends GraphBase implements Sync
         SystemARQ.sync(dsg);
     }
     
-    // Need to call GraphBase.close() or sent the protected closed flag.
-    //@Override public void close() { super.close() ; }
+    @Override
+    public Capabilities getCapabilities() { 
+        if (capabilities == null) 
+            capabilities = new GraphViewCapabilities();
+        return capabilities;
+    }
+    
+    protected static class GraphViewCapabilities implements Capabilities {
+        @Override
+        public boolean sizeAccurate() {
+            return true;
+        }
+
+        @Override
+        public boolean addAllowed() {
+            return addAllowed(false);
+        }
+
+        @Override
+        public boolean addAllowed(boolean every) {
+            return true;
+        }
+
+        @Override
+        public boolean deleteAllowed() {
+            return deleteAllowed(false);
+        }
+
+        @Override
+        public boolean deleteAllowed(boolean every) {
+            return true;
+        }
+
+        @Override
+        public boolean canBeEmpty() {
+            return true;
+        }
+
+        @Override
+        public boolean iteratorRemoveAllowed() {
+            //Default for GraphViews is that iterators do not provide remove. 
+            return false;
+        }
+
+        @Override
+        public boolean findContractSafe() {
+            return true;
+        }
+
+        @Override
+        public boolean handlesLiteralTyping() {
+            return false;
+        }
+    }
 }

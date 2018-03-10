@@ -90,13 +90,13 @@ public abstract class ActionBase extends ServletBase
                 // Possibility :: response.setHeader("Retry-after", "600") ;    // 5 minutes
                 ServletOps.responseSendError(response, HttpSC.SERVICE_UNAVAILABLE_503, message);
             } catch (ActionErrorException ex) {
-                if ( ex.exception != null )
-                    ex.exception.printStackTrace(System.err) ;
+                if ( ex.getCause() != null )
+                    ex.getCause().printStackTrace(System.err) ;
                 // Log message done by printResponse in a moment.
-                if ( ex.message != null )
-                    ServletOps.responseSendError(response, ex.rc, ex.message) ;
+                if ( ex.getMessage() != null )
+                    ServletOps.responseSendError(response, ex.getRC(), ex.getMessage()) ;
                 else
-                    ServletOps.responseSendError(response, ex.rc) ;
+                    ServletOps.responseSendError(response, ex.getRC()) ;
             } catch (RuntimeIOException ex) {
                 log.warn(format("[%d] Runtime IO Exception (client left?) RC = %d : %s", id, HttpSC.INTERNAL_SERVER_ERROR_500, ex.getMessage()), ex) ;
                 ServletOps.responseSendError(response, HttpSC.INTERNAL_SERVER_ERROR_500, ex.getMessage()) ;
@@ -231,8 +231,14 @@ public abstract class ActionBase extends ServletBase
                 log.info(format("[%d]   <= %-20s %s", action.id, HttpNames.hContentType+":", action.contentType)) ;
             if ( action.contentLength != -1 )
                 log.info(format("[%d]   <= %-20s %d", action.id, HttpNames.hContentLengh+":", action.contentLength)) ;
-            for (Map.Entry<String, String> e : action.headers.entrySet())
+            for (Map.Entry<String, String> e : action.headers.entrySet()) {
+                // Skip already printed.
+                if ( e.getKey().equalsIgnoreCase(HttpNames.hContentType) && action.contentType != null)
+                    continue;
+                if ( e.getKey().equalsIgnoreCase(HttpNames.hContentLengh) && action.contentLength != -1)
+                    continue;
                 log.info(format("[%d]   <= %-20s %s", action.id, e.getKey()+":", e.getValue())) ;
+            }
         }
 
         String timeStr = fmtMillis(time) ;
