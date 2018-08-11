@@ -214,7 +214,7 @@ public abstract class JenaUUID
 
     /** Format using two longs - assumed valid for an UUID of some kind */
     public static String toString(long mostSignificantBits, long leastSignificantBits) {
-        StringBuffer sb = new StringBuffer(36) ;
+        StringBuilder sb = new StringBuilder(36) ;
         JenaUUID.toHex(sb, BitsLong.unpack(mostSignificantBits, 32, 64), 4) ;
         sb.append('-') ;
         JenaUUID.toHex(sb, BitsLong.unpack(mostSignificantBits, 16, 32), 2) ;
@@ -230,7 +230,7 @@ public abstract class JenaUUID
     // ----------------------------------------------------
     // Worker functions
 
-    static void toHex(StringBuffer sBuff, long value, int lenBytes) {
+    static void toHex(StringBuilder sBuff, long value, int lenBytes) {
         // Insert in high-low order, by nibble
         for (int i = 2 * lenBytes - 1; i >= 0; i--) {
             int shift = 4 * i ;

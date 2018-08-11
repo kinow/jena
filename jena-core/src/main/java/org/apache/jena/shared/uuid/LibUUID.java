@@ -55,6 +55,7 @@ class LibUUID
         // One thing that is missing is something related to the identify
         // of this OS process (so two identical programs, starting at
         // exactly the same time, might get the same seed).
+        // XXX we can later use Java 9 ProcessHandle to obtain the pid
         
         StringBuilder seedInput = new StringBuilder(200) ;
         

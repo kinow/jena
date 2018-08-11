@@ -55,7 +55,7 @@ laid out as:
 
 Java5 introduced java.util.UUID but it does not include an timebased generator.
 It provides an API to manipulate timebased UUIDs, and also factory methods for
-vversion 4 (random) and version 3 (name based/MD5) or version 5 (name based/SHA1).
+version 4 (random) and version 3 (name based/MD5) or version 5 (name based/SHA1).
 Version 2 is DCE Security version, with embedded POSIX UIDs.
 
 Most significant long:
@@ -88,7 +88,7 @@ public class UUID_V1_Gen implements UUIDFactory
 {
 	// Constants
     static final int versionHere = 1 ;	      // Version 1: time-based. This is one character hex string.
-    static final int variantHere = 2 ;		  // DCE varient
+    static final int variantHere = 2 ;		  // DCE variant
     
     static final long maskTimeLow    = 0xFFFFFFFF00000000L ;
     static final long maskTimeMid    = 0x00000000FFFF0000L ;
@@ -204,7 +204,7 @@ public class UUID_V1_Gen implements UUIDFactory
         long node = uuid.getNode() ;
         long clockSeq = uuid.getClockSequence() ;
 
-        StringBuffer sBuff = new StringBuffer() ;
+        StringBuilder sBuff = new StringBuilder() ;
         JenaUUID.toHex(sBuff, timeLow, 4) ;
         sBuff.append('-') ;
         JenaUUID.toHex(sBuff, timeMid, 2) ;
