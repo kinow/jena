@@ -1,0 +1,74 @@
+## Licensed under the terms of http://www.apache.org/licenses/LICENSE-2.0
+
+name: Apache Jena UI
+
+on:
+  push:
+    branches: [main]
+    pull_request:
+    workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-test-and-build:
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        java_version: ['21']
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: yarn
+      - name: Set up JDK ${{ matrix.java_version }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java_version }}
+      - name: Build with Maven
+        run: mvn -B --file pom.xml --projects jena-fuseki2/jena-fuseki-ui --also-make-dependents test install
+      - name: Lint
+        working-directory: jena-fuseki2/jena-fuseki-ui
+        run: yarn lint
+
+  cypress-run:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, chrome, electron]
+        os: [ubuntu-latest]
+    env:
+      COVERAGE: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: yarn
+
+      - name: Test (E2E)
+        uses: cypress-io/github-action@v6
+        env:
+          BASE_URL: http://localhost:8080/
+        with:
+          working-directory: jena-fuseki2/jena-fuseki-ui
+          build: yarn run build
+          start: yarn run serve:fuseki
+          config: baseUrl=${{ env.BASE_URL }}
+          wait-on: ${{ env.BASE_URL }}
+          browser: ${{ matrix.browser }}
